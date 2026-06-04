@@ -14,6 +14,7 @@ import {
 import { signOutAction } from "@/app/actions/auth";
 import { updateProfileAction } from "@/app/actions/profile";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
+import { FileInput } from "@/components/ui/file-input";
 import type { WorkspaceDashboardData } from "@/lib/types";
 import { formatTimestamp, getProfileHandle } from "@/lib/utils";
 
@@ -376,7 +377,7 @@ export function DashboardShell({
                   <Upload className="h-4 w-4" />
                   workspace icon
                 </span>
-                <input name="icon" type="file" accept="image/*" className="surface px-4 py-3 text-sm tracking-normal text-white" />
+                <FileInput name="icon" accept="image/*" buttonLabel="choose file" />
               </label>
               <button className="surface px-4 py-3 text-sm font-medium">upload icon</button>
             </form>

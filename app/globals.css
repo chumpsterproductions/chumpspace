@@ -152,6 +152,10 @@ button {
   color: #a9c0ff;
 }
 
+.mention-menu__item {
+  border: 1px solid var(--border);
+}
+
 .avatar-ring {
   border: 1px solid var(--border-strong);
   box-shadow: 0 0 0 1px rgba(79, 126, 255, 0.16);

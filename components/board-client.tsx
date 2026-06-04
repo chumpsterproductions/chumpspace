@@ -9,7 +9,6 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   Activity,
   Archive,
-  CalendarDays,
   Check,
   CheckSquare,
   ClipboardPaste,
@@ -18,6 +17,7 @@ import {
   Paperclip,
   Plus,
   Settings2,
+  Tags,
   Users,
   X,
 } from "lucide-react";
@@ -43,6 +43,8 @@ import {
   uploadCardImageAction,
 } from "@/app/actions/board";
 import { MentionText } from "@/components/mention-text";
+import { FileInput } from "@/components/ui/file-input";
+import { MentionInput } from "@/components/ui/mention-input";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { Attachment, BoardPageData, CardRecord, ListRecord } from "@/lib/types";
@@ -139,6 +141,10 @@ export function BoardClient({ data }: { data: BoardPageData }) {
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const [showActivity, setShowActivity] = useState(false);
   const [showBoardSettings, setShowBoardSettings] = useState(false);
+  const [showCreateList, setShowCreateList] = useState(false);
+  const [showLabelEditor, setShowLabelEditor] = useState(false);
+  const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [commentDraft, setCommentDraft] = useState("");
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
   const [draggedListId, setDraggedListId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<CardContextMenu | null>(null);
@@ -225,6 +231,12 @@ export function BoardClient({ data }: { data: BoardPageData }) {
       setSelectedCardId(null);
     }
   }, [selectedCard, selectedCardId]);
+
+  useEffect(() => {
+    setDescriptionDraft(selectedCard?.description ?? "");
+    setCommentDraft("");
+    setShowLabelEditor(false);
+  }, [selectedCard?.id, selectedCard?.description]);
 
   useEffect(() => {
     if (selectedCard == null) {
@@ -554,10 +566,46 @@ export function BoardClient({ data }: { data: BoardPageData }) {
     })),
   ];
 
+  function submitCreateList(formData: FormData, reset?: () => void) {
+    const title = String(formData.get("title") ?? "").trim();
+
+    if (title.length === 0) {
+      return;
+    }
+
+    const snapshot = createListsSnapshot();
+    const optimisticList: ListRecord = {
+      id: `temp-${crypto.randomUUID()}`,
+      board_id: boardData.board.id,
+      title,
+      position: boardData.lists.length,
+      archived_at: null,
+      cards: [],
+    };
+
+    setBoardData((current) => ({
+      ...current,
+      lists: [...current.lists, optimisticList],
+    }));
+
+    reset?.();
+    setShowCreateList(false);
+
+    startTransition(async () => {
+      await runOptimisticBoardAction(
+        async () => {
+          await createListAction(formData);
+        },
+        () => restoreLists(snapshot),
+        "list created.",
+      );
+    });
+  }
+
   return (
     <div className="min-h-screen grainy-bg px-4 py-5 sm:px-6 lowercase">
       <div
-        className={`mx-auto max-w-[1600px] transition duration-200 ${(selectedCard || showBoardSettings) ? "pointer-events-none blur-sm" : ""}`}
+        className={`mx-auto max-w-[1600px] transition duration-200 ${(selectedCard || showBoardSettings || showCreateList) ? "pointer-events-none blur-sm" : ""}`}
       >
         <header className="mb-5 border border-[var(--border)] bg-[var(--panel)] px-6 py-5 text-white">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -693,12 +741,6 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                                   ) : null}
 
                                   <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-[var(--muted)]">
-                                    {card.due_at ? (
-                                      <span className="inline-flex items-center gap-1.5">
-                                        <CalendarDays className="h-3.5 w-3.5" />
-                                        {formatTimestamp(card.due_at)}
-                                      </span>
-                                    ) : null}
                                     {card.comments.length > 0 ? (
                                       <span className="inline-flex items-center gap-1.5">
                                         <MessageSquare className="h-3.5 w-3.5" />
@@ -718,6 +760,34 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                                         /
                                         {card.checklists.reduce((total, checklist) => total + checklist.items.length, 0)}
                                       </span>
+                                    ) : null}
+                                    {card.members.length > 0 ? (
+                                      <div className="ml-auto flex items-center">
+                                        {card.members.slice(0, 4).map((member, index) => (
+                                          member.avatar_url ? (
+                                            <img
+                                              key={member.id}
+                                              src={member.avatar_url}
+                                              alt=""
+                                              className="avatar-ring h-7 w-7 object-cover"
+                                              style={{ marginLeft: index === 0 ? 0 : -8 }}
+                                            />
+                                          ) : (
+                                            <div
+                                              key={member.id}
+                                              className="avatar-ring flex h-7 w-7 items-center justify-center bg-[var(--surface-soft)] text-[9px] text-white"
+                                              style={{ marginLeft: index === 0 ? 0 : -8 }}
+                                            >
+                                              {(member.full_name ?? member.email).slice(0, 2)}
+                                            </div>
+                                          )
+                                        ))}
+                                        {card.members.length > 4 ? (
+                                          <div className="avatar-ring ml-[-8px] flex h-7 w-7 items-center justify-center bg-[var(--surface-soft)] text-[9px] text-white">
+                                            +{card.members.length - 4}
+                                          </div>
+                                        ) : null}
+                                      </div>
                                     ) : null}
                                   </div>
                                 </button>
@@ -792,54 +862,16 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                   </SortableListShell>
                 ))}
 
-                <section className="panel h-fit w-[320px] shrink-0 p-4">
-                  <h2 className="text-lg font-semibold">add another list</h2>
-                  <form
-                    className="mt-4 grid gap-2"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      const formData = new FormData(event.currentTarget);
-                      const title = String(formData.get("title") ?? "").trim();
-
-                      if (title.length === 0) {
-                        return;
-                      }
-
-                      const snapshot = createListsSnapshot();
-                      const optimisticList: ListRecord = {
-                        id: `temp-${crypto.randomUUID()}`,
-                        board_id: boardData.board.id,
-                        title,
-                        position: boardData.lists.length,
-                        archived_at: null,
-                        cards: [],
-                      };
-
-                      setBoardData((current) => ({
-                        ...current,
-                        lists: [...current.lists, optimisticList],
-                      }));
-
-                      event.currentTarget.reset();
-
-                      startTransition(async () => {
-                        await runOptimisticBoardAction(
-                          async () => {
-                            await createListAction(formData);
-                          },
-                          () => restoreLists(snapshot),
-                          "list created.",
-                        );
-                      });
-                    }}
+                <div className="flex h-fit w-fit shrink-0 items-start pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateList(true)}
+                    className="surface flex h-12 w-12 items-center justify-center text-white transition hover:border-[var(--border-strong)]"
+                    aria-label="Add another list"
                   >
-                    <input type="hidden" name="boardId" value={boardData.board.id} />
-                    <input name="title" required placeholder="ideas, doing, done" className="surface px-4 py-3 text-sm" />
-                    <button className="surface px-4 py-3 font-medium transition hover:border-[var(--border-strong)]">
-                      create list
-                    </button>
-                  </form>
-                </section>
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </SortableContext>
             <DragOverlay zIndex={9999}>
@@ -985,8 +1017,6 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                 formData.set("cardId", contextMenuCard.id);
                 formData.set("title", contextMenuCard.title);
                 formData.set("description", contextMenuCard.description ?? "");
-                formData.set("startAt", contextMenuCard.start_at ?? "");
-                formData.set("dueAt", contextMenuCard.due_at ?? "");
                 formData.set("coverColor", contextMenuCard.cover_color ?? "");
                 if (nextCompleted) {
                   formData.set("isCompleted", "true");
@@ -1052,6 +1082,36 @@ export function BoardClient({ data }: { data: BoardPageData }) {
               <div className="min-w-0">
                 <p className="text-xs tracking-[0.25em] text-[var(--muted)]">card details</p>
                 <h2 className="mt-2 break-words text-3xl font-semibold">{selectedCard.title}</h2>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {selectedCard.labels.map((label) => (
+                    <span key={label.id} className="px-2.5 py-1 text-xs font-medium text-white" style={{ background: label.color }}>
+                      {label.name}
+                    </span>
+                  ))}
+                  {selectedCard.members.length > 0 ? (
+                    <div className="flex items-center">
+                      {selectedCard.members.slice(0, 5).map((member, index) => (
+                        member.avatar_url ? (
+                          <img
+                            key={member.id}
+                            src={member.avatar_url}
+                            alt=""
+                            className="avatar-ring h-8 w-8 object-cover"
+                            style={{ marginLeft: index === 0 ? 0 : -8 }}
+                          />
+                        ) : (
+                          <div
+                            key={member.id}
+                            className="avatar-ring flex h-8 w-8 items-center justify-center bg-[var(--surface-soft)] text-[10px] text-white"
+                            style={{ marginLeft: index === 0 ? 0 : -8 }}
+                          >
+                            {(member.full_name ?? member.email).slice(0, 2)}
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
                 <p className="mt-2 text-sm text-[var(--muted)]">
                   paste an image from your clipboard anywhere in this window to attach it instantly.
                 </p>
@@ -1062,19 +1122,80 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                   <p className="mt-2 text-xs text-[#a9c0ff]">{actionStatus}</p>
                 ) : null}
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedCardId(null)}
-                className="surface p-3"
-                aria-label="Close card details"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLabelEditor((current) => current == false)}
+                  className={`surface p-3 transition ${showLabelEditor ? "border-[var(--border-strong)] text-[#c4d3ff]" : "text-white/80"}`}
+                  aria-label="Toggle labels"
+                >
+                  <Tags className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCardId(null)}
+                  className="surface p-3"
+                  aria-label="Close card details"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             <div className="soft-scrollbar max-h-[calc(100vh-8rem)] overflow-y-auto px-6 py-5">
               <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
                 <div className="grid gap-6">
+                  {showLabelEditor ? (
+                    <section className="surface grid gap-3 p-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold">labels</h3>
+                        <form action={createLabelAction} className="flex items-center gap-2">
+                          <input type="hidden" name="boardId" value={boardData.board.id} />
+                          <input name="name" required placeholder="urgent" className="surface w-28 px-3 py-2 text-xs" />
+                          <input name="color" defaultValue="#4f7eff" className="surface w-24 px-3 py-2 text-xs" />
+                          <button className="surface px-3 py-2 text-xs">add</button>
+                        </form>
+                      </div>
+                      <div className="grid gap-2">
+                        {boardData.labels.map((label) => {
+                          const active = selectedCard.labels.some((item) => item.id === label.id);
+
+                          return (
+                            <button
+                              key={label.id}
+                              type="button"
+                              onClick={() => {
+                                const snapshot = createListsSnapshot();
+                                updateCardInState(selectedCard.id, (card) => ({
+                                  ...card,
+                                  labels: active
+                                    ? card.labels.filter((item) => item.id !== label.id)
+                                    : [...card.labels, label],
+                                }));
+
+                                startTransition(async () => {
+                                  await runOptimisticBoardAction(
+                                    async () => {
+                                      await toggleCardLabelAction(selectedCard.id, label.id, active == false, boardData.board.id);
+                                    },
+                                    () => restoreLists(snapshot),
+                                  );
+                                });
+                              }}
+                              className="surface flex items-center justify-between px-4 py-3 text-sm"
+                            >
+                              <span className="inline-flex items-center gap-2">
+                                <span className="h-3 w-3" style={{ background: label.color }} />
+                                {label.name}
+                              </span>
+                              <span>{active ? "on" : "off"}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ) : null}
+
                   <form
                     className="grid gap-3"
                     onSubmit={(event) => {
@@ -1084,8 +1205,8 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                       const patch = {
                         title: String(formData.get("title") ?? "").trim(),
                         description: String(formData.get("description") ?? "").trim() || null,
-                        start_at: String(formData.get("startAt") ?? "").trim() || null,
-                        due_at: String(formData.get("dueAt") ?? "").trim() || null,
+                        start_at: null,
+                        due_at: null,
                         cover_color: String(formData.get("coverColor") ?? "").trim() || null,
                         is_completed: String(formData.get("isCompleted") ?? "false") === "true",
                       };
@@ -1156,11 +1277,15 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                     <input type="hidden" name="boardId" value={boardData.board.id} />
                     <input type="hidden" name="cardId" value={selectedCard.id} />
                     <input name="title" defaultValue={selectedCard.title} required className="surface px-4 py-3" />
-                    <textarea name="description" defaultValue={selectedCard.description ?? ""} rows={6} placeholder="describe the work, acceptance criteria, links, notes." className="surface px-4 py-3" />
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <input name="startAt" type="datetime-local" defaultValue={selectedCard.start_at ? selectedCard.start_at.slice(0, 16) : ""} className="surface px-4 py-3" />
-                      <input name="dueAt" type="datetime-local" defaultValue={selectedCard.due_at ? selectedCard.due_at.slice(0, 16) : ""} className="surface px-4 py-3" />
-                    </div>
+                    <MentionInput
+                      name="description"
+                      value={descriptionDraft}
+                      onChange={setDescriptionDraft}
+                      profiles={boardData.members.map((member) => member.profile)}
+                      rows={6}
+                      placeholder="describe the work, acceptance criteria, links, notes. use @handles to ping people."
+                      className="surface px-4 py-3"
+                    />
                     <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
                       <input name="coverColor" defaultValue={selectedCard.cover_color ?? ""} placeholder="#4f7eff" className="surface px-4 py-3" />
                       <label className="surface flex items-center gap-2 px-4 py-3">
@@ -1221,55 +1346,6 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                     </div>
                   </section>
 
-                  <section>
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">labels</h3>
-                      <form action={createLabelAction} className="flex items-center gap-2">
-                        <input type="hidden" name="boardId" value={boardData.board.id} />
-                        <input name="name" required placeholder="urgent" className="surface w-28 px-3 py-2 text-xs" />
-                        <input name="color" defaultValue="#4f7eff" className="surface w-24 px-3 py-2 text-xs" />
-                        <button className="surface px-3 py-2 text-xs">add</button>
-                      </form>
-                    </div>
-                    <div className="mt-3 grid gap-2">
-                      {boardData.labels.map((label) => {
-                        const active = selectedCard.labels.some((item) => item.id === label.id);
-
-                        return (
-                          <button
-                            key={label.id}
-                            type="button"
-                            onClick={() => {
-                              const snapshot = createListsSnapshot();
-                              updateCardInState(selectedCard.id, (card) => ({
-                                ...card,
-                                labels: active
-                                  ? card.labels.filter((item) => item.id !== label.id)
-                                  : [...card.labels, label],
-                              }));
-
-                              startTransition(async () => {
-                                await runOptimisticBoardAction(
-                                  async () => {
-                                    await toggleCardLabelAction(selectedCard.id, label.id, active == false, boardData.board.id);
-                                  },
-                                  () => restoreLists(snapshot),
-                                );
-                              });
-                            }}
-                            className="surface flex items-center justify-between px-4 py-3 text-sm"
-                          >
-                            <span className="inline-flex items-center gap-2">
-                              <span className="h-3 w-3" style={{ background: label.color }} />
-                              {label.name}
-                            </span>
-                            <span>{active ? "on" : "off"}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </section>
-
                   <section className="grid gap-3">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold">comments</h3>
@@ -1299,7 +1375,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                           comments: [optimisticComment, ...card.comments],
                         }));
 
-                        event.currentTarget.reset();
+                        setCommentDraft("");
 
                         startTransition(async () => {
                           await runOptimisticBoardAction(
@@ -1314,7 +1390,16 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                     >
                       <input type="hidden" name="boardId" value={boardData.board.id} />
                       <input type="hidden" name="cardId" value={selectedCard.id} />
-                      <textarea name="body" required rows={4} placeholder="leave an update for the team. use @handles to ping people." className="surface px-4 py-3" />
+                      <MentionInput
+                        name="body"
+                        value={commentDraft}
+                        onChange={setCommentDraft}
+                        profiles={boardData.members.map((member) => member.profile)}
+                        rows={4}
+                        required
+                        placeholder="leave an update for the team. use @handles to ping people."
+                        className="surface px-4 py-3"
+                      />
                       <button className="surface px-4 py-3 font-medium">post comment</button>
                     </form>
                     <div className="grid gap-3">
@@ -1368,7 +1453,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                         <ImageUp className="h-4 w-4" />
                         upload manually
                       </label>
-                      <input name="image" type="file" accept="image/*" className="surface px-4 py-3 text-sm" />
+                      <FileInput name="image" accept="image/*" buttonLabel="choose file" />
                       <button className="surface px-4 py-3 font-medium">upload image</button>
                     </form>
                     <div className="grid gap-2">
@@ -1633,6 +1718,54 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                 </button>
               </form>
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showCreateList ? (
+        <div className="fixed inset-0 z-[172] flex items-center justify-center px-4 py-8">
+          <button
+            type="button"
+            aria-label="Close create list"
+            onClick={() => setShowCreateList(false)}
+            className="absolute inset-0 bg-black/55"
+          />
+          <div className="relative z-[173] w-full max-w-lg border border-[var(--border-strong)] bg-[var(--panel)] p-6 text-white shadow-[0_35px_140px_rgba(0,0,0,0.72)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs tracking-[0.25em] text-[var(--muted)]">create list</p>
+                <h2 className="mt-2 text-3xl font-semibold">add another list</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCreateList(false)}
+                className="surface p-3 text-white/80 transition hover:border-[var(--border-strong)]"
+                aria-label="Close create list"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form
+              className="mt-6 grid gap-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const formData = new FormData(event.currentTarget);
+                submitCreateList(formData, () => event.currentTarget.reset());
+              }}
+            >
+              <input type="hidden" name="boardId" value={boardData.board.id} />
+              <input
+                name="title"
+                required
+                autoFocus
+                placeholder="ideas, doing, done"
+                className="surface px-4 py-3 text-sm"
+              />
+              <button className="surface px-4 py-3 text-sm font-medium transition hover:border-[var(--border-strong)]">
+                create list
+              </button>
+            </form>
           </div>
         </div>
       ) : null}

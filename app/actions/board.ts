@@ -79,6 +79,78 @@ async function logActivity(boardId: string, action: string, details: string, car
   });
 }
 
+function extractMentionHandles(text: string) {
+  return new Set(
+    Array.from(text.matchAll(/@([a-z0-9._-]+)/gi)).map((match) => normalizeDiscordUsername(match[1])),
+  );
+}
+
+async function createMentionNotifications(
+  actor: Awaited<ReturnType<typeof getActor>>,
+  boardId: string,
+  cardId: string,
+  text: string,
+  body: string,
+  previousText?: string | null,
+) {
+  const mentionedHandles = extractMentionHandles(text);
+
+  if (mentionedHandles.size === 0) {
+    return;
+  }
+
+  if (previousText != null && previousText.length > 0) {
+    const previousHandles = extractMentionHandles(previousText);
+
+    for (const handle of previousHandles) {
+      mentionedHandles.delete(handle);
+    }
+
+    if (mentionedHandles.size === 0) {
+      return;
+    }
+  }
+
+  const { data: board } = await actor.supabase
+    .from("boards")
+    .select("workspace_id")
+    .eq("id", boardId)
+    .single();
+
+  const workspaceId = board?.workspace_id;
+
+  if (workspaceId == null) {
+    return;
+  }
+
+  const { data: members } = await actor.supabase
+    .from("workspace_members")
+    .select("profile_id, profile:profiles(id, email, full_name, discord_username)")
+    .eq("workspace_id", workspaceId);
+
+  const notifications = (members ?? [])
+    .map((member: any) => {
+      const profile = member.profile;
+      const handle = getProfileHandle(profile);
+
+      if (mentionedHandles.has(handle) == false || profile.id === actor.user.id) {
+        return null;
+      }
+
+      return {
+        profile_id: profile.id,
+        board_id: boardId,
+        card_id: cardId,
+        body,
+      };
+    })
+    .filter((value): value is { profile_id: string; board_id: string; card_id: string; body: string } => value != null);
+
+  if (notifications.length > 0) {
+    await actor.supabase.from("notifications").insert(notifications);
+  }
+}
+
 async function moveCompletedCardIfNeeded(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   boardId: string,
@@ -220,10 +292,25 @@ export async function updateCardAction(formData: FormData) {
     cover_color: String(formData.get("coverColor") ?? "").trim() || null,
     is_completed: String(formData.get("isCompleted") ?? "false") === "true",
   };
-  const { supabase } = await getActor();
+  const actor = await getActor();
+  const { supabase, email, user } = actor;
+
+  const { data: existingCard } = await supabase
+    .from("cards")
+    .select("description")
+    .eq("id", cardId)
+    .single();
 
   await supabase.from("cards").update(patch).eq("id", cardId);
   await moveCompletedCardIfNeeded(supabase, boardId, cardId, patch.is_completed);
+  await createMentionNotifications(
+    actor,
+    boardId,
+    cardId,
+    patch.description ?? "",
+    `${user.user_metadata.full_name ?? email} mentioned you in a card description.`,
+    existingCard?.description ?? null,
+  );
   await logActivity(boardId, "card.updated", `Updated card "${patch.title}".`, cardId);
   revalidatePath(`/boards/${boardId}`);
 }
@@ -394,7 +481,8 @@ export async function addCommentAction(formData: FormData) {
   const boardId = String(formData.get("boardId") ?? "");
   const cardId = String(formData.get("cardId") ?? "");
   const body = String(formData.get("body") ?? "").trim();
-  const { supabase, user, email } = await getActor();
+  const actor = await getActor();
+  const { supabase, user, email } = actor;
 
   await supabase.from("comments").insert({
     card_id: cardId,
@@ -402,42 +490,13 @@ export async function addCommentAction(formData: FormData) {
     body,
   });
 
-  const { data: board } = await supabase
-    .from("boards")
-    .select("workspace_id")
-    .eq("id", boardId)
-    .single();
-
-  const { data: members } = await supabase
-    .from("workspace_members")
-    .select("profile_id, profile:profiles(id, email, full_name, discord_username)")
-    .eq("workspace_id", board?.workspace_id ?? "");
-
-  const mentionedHandles = new Set(
-    Array.from(body.matchAll(/@([a-z0-9._-]+)/gi)).map((match) => normalizeDiscordUsername(match[1])),
+  await createMentionNotifications(
+    actor,
+    boardId,
+    cardId,
+    body,
+    `${user.user_metadata.full_name ?? email} mentioned you in a comment.`,
   );
-
-  const notifications = (members ?? [])
-    .map((member: any) => {
-      const profile = member.profile;
-      const handle = getProfileHandle(profile);
-
-      if (mentionedHandles.has(handle) == false || profile.id === user.id) {
-        return null;
-      }
-
-      return {
-        profile_id: profile.id,
-        board_id: boardId,
-        card_id: cardId,
-        body: `${user.user_metadata.full_name ?? email} mentioned you in a comment.`,
-      };
-    })
-    .filter((value): value is { profile_id: string; board_id: string; card_id: string; body: string } => value != null);
-
-  if (notifications.length > 0) {
-    await supabase.from("notifications").insert(notifications);
-  }
 
   await logActivity(boardId, "comment.created", "Added a comment.", cardId);
   revalidatePath(`/boards/${boardId}`);
