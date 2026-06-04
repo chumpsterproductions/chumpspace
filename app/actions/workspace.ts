@@ -110,17 +110,30 @@ export async function inviteWorkspaceMemberAction(formData: FormData) {
     .from("profiles")
     .select("id")
     .eq("discord_username", discordUsername)
-    .single();
+    .maybeSingle();
 
   if (profile == null) {
     throw new Error("That Discord username does not have an account yet.");
   }
 
-  await supabase.from("workspace_members").upsert({
-    workspace_id: workspaceId,
-    profile_id: profile.id,
-    role: "member",
-  });
+  const { data: existingMembership } = await supabase
+    .from("workspace_members")
+    .select("workspace_id")
+    .eq("workspace_id", workspaceId)
+    .eq("profile_id", profile.id)
+    .maybeSingle();
+
+  if (existingMembership == null) {
+    const { error } = await supabase.from("workspace_members").insert({
+      workspace_id: workspaceId,
+      profile_id: profile.id,
+      role: "member",
+    });
+
+    if (error != null) {
+      throw new Error(error.message);
+    }
+  }
 
   revalidatePath("/dashboard");
 }

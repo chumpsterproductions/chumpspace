@@ -215,6 +215,37 @@ as $$
   select workspace_id from public.boards where id = target_board_id;
 $$;
 
+create or replace function public.accept_workspace_invite(invite_token text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  target_workspace_id uuid;
+begin
+  select workspace_id
+  into target_workspace_id
+  from public.workspace_invites
+  where token = invite_token;
+
+  if target_workspace_id is null then
+    raise exception 'Invite not found.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.workspace_members
+    where workspace_id = target_workspace_id and profile_id = auth.uid()
+  ) then
+    insert into public.workspace_members (workspace_id, profile_id, role)
+    values (target_workspace_id, auth.uid(), 'member');
+  end if;
+
+  return target_workspace_id;
+end;
+$$;
+
 create policy "profiles are visible to signed in users" on public.profiles
   for select using (auth.role() = 'authenticated');
 

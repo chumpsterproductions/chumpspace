@@ -22,19 +22,12 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
     return NextResponse.redirect(new URL("/dashboard?error=invite-not-found", request.url));
   }
 
-  const { data: existingMembership } = await supabase
-    .from("workspace_members")
-    .select("workspace_id")
-    .eq("workspace_id", invite.workspace_id)
-    .eq("profile_id", user.id)
-    .maybeSingle();
+  const { error } = await supabase.rpc("accept_workspace_invite", {
+    invite_token: token,
+  });
 
-  if (existingMembership == null) {
-    await supabase.from("workspace_members").insert({
-      workspace_id: invite.workspace_id,
-      profile_id: user.id,
-      role: "member",
-    });
+  if (error != null) {
+    return NextResponse.redirect(new URL(`/dashboard?error=${encodeURIComponent(error.message)}`, request.url));
   }
 
   return NextResponse.redirect(new URL(`/dashboard?workspace=${invite.workspace_id}&open=boards`, request.url));

@@ -12,7 +12,7 @@ import {
   uploadWorkspaceIconAction,
 } from "@/app/actions/workspace";
 import { signOutAction } from "@/app/actions/auth";
-import { updateProfileAction, uploadAvatarAction } from "@/app/actions/profile";
+import { updateProfileAction } from "@/app/actions/profile";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import type { WorkspaceDashboardData } from "@/lib/types";
 import { formatTimestamp, getProfileHandle } from "@/lib/utils";
@@ -502,16 +502,9 @@ export function DashboardShell({
               </button>
             </form>
 
-            <form action={uploadAvatarAction} className="mt-3 grid gap-3">
-              <label className="grid gap-2 text-xs tracking-[0.2em] text-[var(--muted)]">
-                <span className="inline-flex items-center gap-2">
-                  <Upload className="h-4 w-4" />
-                  avatar
-                </span>
-                <input name="avatar" type="file" accept="image/*" className="surface px-4 py-3 text-sm tracking-normal text-white" />
-              </label>
-              <button className="surface px-4 py-3 text-sm font-medium">upload avatar</button>
-            </form>
+            <div className="mt-3 border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-sm text-[var(--muted)]">
+              avatar changing is disabled for now.
+            </div>
 
             <form action={signOutAction} className="mt-3">
               <button className="surface w-full px-4 py-3 text-sm font-medium transition hover:border-[var(--border-strong)]">
