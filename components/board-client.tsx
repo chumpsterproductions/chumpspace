@@ -145,6 +145,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
   const [showLabelEditor, setShowLabelEditor] = useState(false);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [commentDraft, setCommentDraft] = useState("");
+  const [completedDraft, setCompletedDraft] = useState(false);
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
   const [draggedListId, setDraggedListId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<CardContextMenu | null>(null);
@@ -236,7 +237,8 @@ export function BoardClient({ data }: { data: BoardPageData }) {
     setDescriptionDraft(selectedCard?.description ?? "");
     setCommentDraft("");
     setShowLabelEditor(false);
-  }, [selectedCard?.id, selectedCard?.description]);
+    setCompletedDraft(selectedCard?.is_completed ?? false);
+  }, [selectedCard?.description, selectedCard?.id, selectedCard?.is_completed]);
 
   useEffect(() => {
     if (selectedCard == null) {
@@ -670,10 +672,10 @@ export function BoardClient({ data }: { data: BoardPageData }) {
             }}
           >
             <SortableContext items={filteredLists.map((list) => list.id)} strategy={horizontalListSortingStrategy}>
-              <div className="soft-scrollbar flex min-h-[72vh] gap-4 overflow-x-auto pb-4">
+              <div className="soft-scrollbar flex min-h-[72vh] items-start gap-4 overflow-x-auto pb-4">
                 {filteredLists.map((list) => (
                   <SortableListShell key={list.id} id={list.id}>
-                    <section className="panel flex h-full w-[320px] shrink-0 flex-col p-4">
+                    <section className="panel flex min-h-[14rem] w-[360px] min-w-[360px] shrink-0 flex-col p-4">
                       <div className="mb-4 flex items-start justify-between gap-3">
                         <form action={updateListTitleAction} className="flex-1">
                           <input type="hidden" name="boardId" value={boardData.board.id} />
@@ -691,7 +693,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                       </div>
 
                       <SortableContext items={list.cards.map((card) => card.id)} strategy={rectSortingStrategy}>
-                        <div className="soft-scrollbar grid max-h-[60vh] gap-3 overflow-y-auto pr-1">
+                        <div className="grid gap-3 pr-1">
                           {list.cards.map((card) => {
                             const coverImage = card.attachments.find((attachment) => isImageUrl(attachment.url));
 
@@ -708,7 +710,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                                       y: event.clientY,
                                     });
                                   }}
-                                  className="surface w-full p-4 text-left transition hover:-translate-y-0.5"
+                                  className="surface w-full min-w-0 overflow-hidden p-4 text-left transition hover:-translate-y-0.5"
                                 >
                                   {coverImage ? (
                                     <img
@@ -1133,6 +1135,14 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setCompletedDraft((current) => current == false)}
+                  className={`surface p-3 transition ${completedDraft ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[#c4d3ff]" : "text-white/80"}`}
+                  aria-label="Toggle completed"
+                >
+                  <Check className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
                   onClick={() => setSelectedCardId(null)}
                   className="surface p-3"
                   aria-label="Close card details"
@@ -1208,7 +1218,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                         start_at: null,
                         due_at: null,
                         cover_color: String(formData.get("coverColor") ?? "").trim() || null,
-                        is_completed: String(formData.get("isCompleted") ?? "false") === "true",
+                        is_completed: completedDraft,
                       };
 
                       const completedTargetListId = getCompletedTargetListId(patch.is_completed);
@@ -1276,6 +1286,8 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                   >
                     <input type="hidden" name="boardId" value={boardData.board.id} />
                     <input type="hidden" name="cardId" value={selectedCard.id} />
+                    <input type="hidden" name="coverColor" value={selectedCard.cover_color ?? ""} />
+                    <input type="hidden" name="isCompleted" value={completedDraft ? "true" : "false"} />
                     <input name="title" defaultValue={selectedCard.title} required className="surface px-4 py-3" />
                     <MentionInput
                       name="description"
@@ -1284,15 +1296,8 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                       profiles={boardData.members.map((member) => member.profile)}
                       rows={6}
                       placeholder="describe the work, acceptance criteria, links, notes. use @handles to ping people."
-                      className="surface px-4 py-3"
+                      className="surface min-w-full max-w-none resize-x overflow-auto px-4 py-3"
                     />
-                    <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                      <input name="coverColor" defaultValue={selectedCard.cover_color ?? ""} placeholder="#4f7eff" className="surface px-4 py-3" />
-                      <label className="surface flex items-center gap-2 px-4 py-3">
-                        <input name="isCompleted" type="checkbox" value="true" defaultChecked={selectedCard.is_completed} />
-                        completed
-                      </label>
-                    </div>
                     <button className="bg-[linear-gradient(135deg,#5c87ff,#3d6cff)] px-4 py-3 font-medium text-white">
                       save card
                     </button>
@@ -1398,7 +1403,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                         rows={4}
                         required
                         placeholder="leave an update for the team. use @handles to ping people."
-                        className="surface px-4 py-3"
+                        className="surface min-w-full max-w-none resize-x overflow-auto px-4 py-3"
                       />
                       <button className="surface px-4 py-3 font-medium">post comment</button>
                     </form>
