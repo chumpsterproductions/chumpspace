@@ -1323,7 +1323,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                       profiles={boardData.members.map((member) => member.profile)}
                       rows={6}
                       placeholder="describe the work, acceptance criteria, links, notes. use @handles to ping people."
-                      className="surface min-w-full max-w-full resize-x overflow-auto px-4 py-3"
+                      className="surface min-w-full max-w-full resize overflow-auto px-4 py-3"
                     />
                     <button className="bg-[linear-gradient(135deg,#5c87ff,#3d6cff)] px-4 py-3 font-medium text-white">
                       save card
@@ -1380,6 +1380,48 @@ export function BoardClient({ data }: { data: BoardPageData }) {
 
                   <section className="grid gap-3">
                     <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">attachments and images</h3>
+                      <span className="inline-flex items-center gap-2 text-xs text-[var(--muted)]">
+                        <ClipboardPaste className="h-4 w-4" />
+                        {isUploadingPaste ? "uploading..." : "paste to attach"}
+                      </span>
+                    </div>
+                    <div className="surface p-4 text-sm text-[var(--muted)]">
+                      paste an image from your clipboard while this card is open and it will attach here automatically.
+                    </div>
+                    <form action={addAttachmentAction} className="surface grid gap-2 p-4">
+                      <input type="hidden" name="boardId" value={boardData.board.id} />
+                      <input type="hidden" name="cardId" value={selectedCard.id} />
+                      <input name="name" required placeholder="figma spec" className="surface px-4 py-3 text-sm" />
+                      <input name="url" type="url" required placeholder="https://..." className="surface px-4 py-3 text-sm" />
+                      <button className="surface px-4 py-3 font-medium">add attachment</button>
+                    </form>
+                    <form action={uploadCardImageAction} className="surface grid gap-2 p-4">
+                      <input type="hidden" name="boardId" value={boardData.board.id} />
+                      <input type="hidden" name="cardId" value={selectedCard.id} />
+                      <label className="inline-flex items-center gap-2 text-xs tracking-[0.2em] text-[var(--muted)]">
+                        <ImageUp className="h-4 w-4" />
+                        upload manually
+                      </label>
+                      <FileInput name="image" accept="image/*" buttonLabel="choose file" />
+                      <button className="surface px-4 py-3 font-medium">upload image</button>
+                    </form>
+                    <div className="grid gap-2">
+                      {selectedCard.attachments.map((attachment) => (
+                        <a key={attachment.id} href={attachment.url} target="_blank" rel="noreferrer" className="surface grid gap-3 px-4 py-3 text-sm">
+                          {isImageUrl(attachment.url) ? (
+                            <img src={attachment.url} alt={attachment.name} className="max-h-64 w-full object-cover" />
+                          ) : null}
+                          <span>{attachment.name}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+
+                <div className="grid gap-6">
+                  <section className="grid gap-3">
+                    <div className="flex items-center justify-between">
                       <h3 className="font-semibold">comments</h3>
                     </div>
                     <form
@@ -1430,7 +1472,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                         rows={4}
                         required
                         placeholder="leave an update for the team. use @handles to ping people."
-                        className="surface min-w-full max-w-full resize-x overflow-auto px-4 py-3"
+                        className="surface min-w-full max-w-full resize overflow-auto px-4 py-3"
                       />
                       <button className="surface px-4 py-3 font-medium">post comment</button>
                     </form>
@@ -1454,48 +1496,6 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                             <MentionText text={comment.body} />
                           </p>
                         </div>
-                      ))}
-                    </div>
-                  </section>
-                </div>
-
-                <div className="grid gap-6">
-                  <section className="grid gap-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">attachments and images</h3>
-                      <span className="inline-flex items-center gap-2 text-xs text-[var(--muted)]">
-                        <ClipboardPaste className="h-4 w-4" />
-                        {isUploadingPaste ? "uploading..." : "paste to attach"}
-                      </span>
-                    </div>
-                    <div className="surface p-4 text-sm text-[var(--muted)]">
-                      paste an image from your clipboard while this card is open and it will attach here automatically.
-                    </div>
-                    <form action={addAttachmentAction} className="surface grid gap-2 p-4">
-                      <input type="hidden" name="boardId" value={boardData.board.id} />
-                      <input type="hidden" name="cardId" value={selectedCard.id} />
-                      <input name="name" required placeholder="figma spec" className="surface px-4 py-3 text-sm" />
-                      <input name="url" type="url" required placeholder="https://..." className="surface px-4 py-3 text-sm" />
-                      <button className="surface px-4 py-3 font-medium">add attachment</button>
-                    </form>
-                    <form action={uploadCardImageAction} className="surface grid gap-2 p-4">
-                      <input type="hidden" name="boardId" value={boardData.board.id} />
-                      <input type="hidden" name="cardId" value={selectedCard.id} />
-                      <label className="inline-flex items-center gap-2 text-xs tracking-[0.2em] text-[var(--muted)]">
-                        <ImageUp className="h-4 w-4" />
-                        upload manually
-                      </label>
-                      <FileInput name="image" accept="image/*" buttonLabel="choose file" />
-                      <button className="surface px-4 py-3 font-medium">upload image</button>
-                    </form>
-                    <div className="grid gap-2">
-                      {selectedCard.attachments.map((attachment) => (
-                        <a key={attachment.id} href={attachment.url} target="_blank" rel="noreferrer" className="surface grid gap-3 px-4 py-3 text-sm">
-                          {isImageUrl(attachment.url) ? (
-                            <img src={attachment.url} alt={attachment.name} className="max-h-64 w-full object-cover" />
-                          ) : null}
-                          <span>{attachment.name}</span>
-                        </a>
                       ))}
                     </div>
                   </section>
