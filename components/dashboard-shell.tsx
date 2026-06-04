@@ -66,6 +66,7 @@ export function DashboardShell({
   const selectedWorkspaceSettings = workspaceSettingsId == null
     ? null
     : data.workspaces.find((workspace) => workspace.id === workspaceSettingsId) ?? null;
+  const hasOpenOverlay = selectedWorkspace != null || selectedWorkspaceSettings != null || showUserSettings;
 
   useEffect(() => {
     if (initialWorkspaceId == null) {
@@ -92,6 +93,23 @@ export function DashboardShell({
       window.clearInterval(interval);
     };
   }, [router]);
+
+  useEffect(() => {
+    if (hasOpenOverlay == false) {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [hasOpenOverlay]);
 
   useEffect(() => {
     if ("Notification" in window == false) {
@@ -260,14 +278,9 @@ export function DashboardShell({
       </div>
 
       {selectedWorkspace ? (
-        <div className="fixed inset-0 z-[160] flex items-center justify-center px-4 py-8">
-          <button
-            type="button"
-            aria-label="Close workspace boards"
-            onClick={() => setSelectedWorkspaceId(null)}
-            className="absolute inset-0 bg-black/55"
-          />
-          <div className="relative z-[161] w-full max-w-2xl border border-[var(--border-strong)] bg-[var(--panel)] p-6 text-white shadow-[0_35px_140px_rgba(0,0,0,0.72)]">
+        <div className="fixed inset-0 z-[160] flex items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
+          <div aria-hidden="true" className="absolute inset-0 bg-black/55" />
+          <div className="relative z-[161] soft-scrollbar max-h-[calc(100vh-3rem)] w-full max-w-2xl overflow-y-auto border border-[var(--border-strong)] bg-[var(--panel)] p-6 text-white shadow-[0_35px_140px_rgba(0,0,0,0.72)] sm:max-h-[calc(100vh-4rem)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs tracking-[0.25em] text-[var(--muted)]">{selectedWorkspace.name}</p>
@@ -334,14 +347,9 @@ export function DashboardShell({
       ) : null}
 
       {selectedWorkspaceSettings ? (
-        <div className="fixed inset-0 z-[165] flex items-center justify-center px-4 py-8">
-          <button
-            type="button"
-            aria-label="Close workspace settings"
-            onClick={() => setWorkspaceSettingsId(null)}
-            className="absolute inset-0 bg-black/55"
-          />
-          <div className="relative z-[166] w-full max-w-xl border border-[var(--border-strong)] bg-[var(--panel)] p-6 text-white shadow-[0_35px_140px_rgba(0,0,0,0.72)]">
+        <div className="fixed inset-0 z-[165] flex items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
+          <div aria-hidden="true" className="absolute inset-0 bg-black/55" />
+          <div className="relative z-[166] soft-scrollbar max-h-[calc(100vh-3rem)] w-full max-w-xl overflow-y-auto border border-[var(--border-strong)] bg-[var(--panel)] p-6 text-white shadow-[0_35px_140px_rgba(0,0,0,0.72)] sm:max-h-[calc(100vh-4rem)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs tracking-[0.25em] text-[var(--muted)]">workspace settings</p>
@@ -452,14 +460,9 @@ export function DashboardShell({
       ) : null}
 
       {showUserSettings ? (
-        <div className="fixed inset-0 z-[170] flex items-center justify-center px-4 py-8">
-          <button
-            type="button"
-            aria-label="Close settings"
-            onClick={() => setShowUserSettings(false)}
-            className="absolute inset-0 bg-black/55"
-          />
-          <div className="relative z-[171] w-full max-w-xl border border-[var(--border-strong)] bg-[var(--panel)] p-6 text-white shadow-[0_35px_140px_rgba(0,0,0,0.72)]">
+        <div className="fixed inset-0 z-[170] flex items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
+          <div aria-hidden="true" className="absolute inset-0 bg-black/55" />
+          <div className="relative z-[171] soft-scrollbar max-h-[calc(100vh-3rem)] w-full max-w-xl overflow-y-auto border border-[var(--border-strong)] bg-[var(--panel)] p-6 text-white shadow-[0_35px_140px_rgba(0,0,0,0.72)] sm:max-h-[calc(100vh-4rem)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs tracking-[0.25em] text-[var(--muted)]">account</p>

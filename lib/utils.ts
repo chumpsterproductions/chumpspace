@@ -56,3 +56,64 @@ export function renderMentions(text: string) {
     isMention: /^@[a-z0-9._-]+$/i.test(piece),
   }));
 }
+
+export function extractUrls(text: string) {
+  return text.match(/https?:\/\/[^\s<]+/gi) ?? [];
+}
+
+export function parseRichText(text: string) {
+  const parts: Array<
+    | { id: string; type: "text"; value: string }
+    | { id: string; type: "mention"; value: string }
+    | { id: string; type: "link"; value: string }
+  > = [];
+  const regex = /(https?:\/\/[^\s<]+|@[a-z0-9._-]+)/gi;
+  let cursor = 0;
+  let index = 0;
+
+  for (const match of text.matchAll(regex)) {
+    const value = match[0];
+    const start = match.index ?? 0;
+
+    if (start > cursor) {
+      parts.push({
+        id: `text-${index}`,
+        type: "text",
+        value: text.slice(cursor, start),
+      });
+      index += 1;
+    }
+
+    const trailing = value.match(/[),.!?]+$/)?.[0] ?? "";
+    const cleanValue = trailing.length > 0 ? value.slice(0, -trailing.length) : value;
+    const type = cleanValue.startsWith("http") ? "link" : "mention";
+
+    parts.push({
+      id: `${type}-${index}`,
+      type,
+      value: cleanValue,
+    });
+    index += 1;
+
+    if (trailing.length > 0) {
+      parts.push({
+        id: `text-${index}`,
+        type: "text",
+        value: trailing,
+      });
+      index += 1;
+    }
+
+    cursor = start + value.length;
+  }
+
+  if (cursor < text.length) {
+    parts.push({
+      id: `text-${index}`,
+      type: "text",
+      value: text.slice(cursor),
+    });
+  }
+
+  return parts;
+}

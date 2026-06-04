@@ -154,6 +154,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
   const [contextMenu, setContextMenu] = useState<CardContextMenu | null>(null);
   const cardFormRef = useRef<HTMLFormElement | null>(null);
   const [, startTransition] = useTransition();
+  const hasOpenOverlay = selectedCardId != null || showBoardSettings || showCreateList;
 
   useEffect(() => {
     setBoardData(data);
@@ -168,6 +169,23 @@ export function BoardClient({ data }: { data: BoardPageData }) {
       window.clearInterval(interval);
     };
   }, [router]);
+
+  useEffect(() => {
+    if (hasOpenOverlay == false) {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [hasOpenOverlay]);
 
   const selectedCard = useMemo(() => {
     for (const list of boardData.lists) {
@@ -833,7 +851,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                                     <img
                                       src={coverImage.url}
                                       alt={coverImage.name}
-                                      className="mb-3 h-36 w-full object-cover"
+                                      className="mb-3 h-24 w-full object-cover"
                                     />
                                   ) : card.cover_color ? (
                                     <div className="mb-3 h-2" style={{ background: card.cover_color }} />
@@ -1243,12 +1261,10 @@ export function BoardClient({ data }: { data: BoardPageData }) {
 
       {selectedCard ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-8 backdrop-blur-sm"
-          onClick={() => setSelectedCardId(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm sm:px-6 sm:py-8"
         >
           <div
-            className="panel w-full max-w-6xl text-white shadow-[0_30px_120px_rgba(0,0,0,0.6)]"
-            onClick={(event) => event.stopPropagation()}
+            className="panel soft-scrollbar max-h-[calc(100vh-3rem)] w-full max-w-6xl overflow-y-auto text-white shadow-[0_30px_120px_rgba(0,0,0,0.6)] sm:max-h-[calc(100vh-4rem)]"
           >
             <div className="flex items-start justify-between gap-4 border-b border-[var(--border)] px-6 py-5">
               <div className="min-w-0">
@@ -1342,7 +1358,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
               </div>
             </div>
 
-            <div className="soft-scrollbar max-h-[calc(100vh-8rem)] overflow-y-auto px-6 py-5">
+            <div className="px-6 py-5">
               <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
                 <div className="grid gap-6">
                   {showLabelEditor ? (
@@ -1425,8 +1441,14 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                       profiles={boardData.members.map((member) => member.profile)}
                       rows={6}
                       placeholder="describe the work, acceptance criteria, links, notes. use @handles to ping people."
-                      className="surface min-w-full max-w-full resize overflow-auto px-4 py-3"
+                      className="surface min-w-full max-w-full resize-y overflow-auto px-4 py-3"
                     />
+                    {descriptionDraft.trim().length > 0 ? (
+                      <div className="surface grid gap-2 px-4 py-3 text-sm text-[var(--muted)]">
+                        <p className="text-xs tracking-[0.2em] text-[var(--muted)]">description preview</p>
+                        <MentionText text={descriptionDraft} />
+                      </div>
+                    ) : null}
                     <button className="bg-[linear-gradient(135deg,#5c87ff,#3d6cff)] px-4 py-3 font-medium text-white">
                       save card
                     </button>
@@ -1574,7 +1596,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                         rows={4}
                         required
                         placeholder="leave an update for the team. use @handles to ping people."
-                        className="surface min-w-full max-w-full resize overflow-auto px-4 py-3"
+                        className="surface min-w-full max-w-full resize-y overflow-auto px-4 py-3"
                       />
                       <button className="surface px-4 py-3 font-medium">post comment</button>
                     </form>
@@ -1594,9 +1616,9 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                             </div>
                             <span className="text-xs text-[var(--muted)]">{formatTimestamp(comment.created_at)}</span>
                           </div>
-                          <p className="mt-2 text-sm text-[var(--muted)]">
+                          <div className="mt-2 text-sm text-[var(--muted)]">
                             <MentionText text={comment.body} />
-                          </p>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1763,14 +1785,9 @@ export function BoardClient({ data }: { data: BoardPageData }) {
       ) : null}
 
       {showBoardSettings ? (
-        <div className="fixed inset-0 z-[170] flex items-center justify-center px-4 py-8">
-          <button
-            type="button"
-            aria-label="Close board settings"
-            onClick={() => setShowBoardSettings(false)}
-            className="absolute inset-0 bg-black/55"
-          />
-          <div className="relative z-[171] w-full max-w-xl border border-[var(--border-strong)] bg-[var(--panel)] p-6 text-white shadow-[0_35px_140px_rgba(0,0,0,0.72)]">
+        <div className="fixed inset-0 z-[170] flex items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
+          <div aria-hidden="true" className="absolute inset-0 bg-black/55" />
+          <div className="relative z-[171] soft-scrollbar max-h-[calc(100vh-3rem)] w-full max-w-xl overflow-y-auto border border-[var(--border-strong)] bg-[var(--panel)] p-6 text-white shadow-[0_35px_140px_rgba(0,0,0,0.72)] sm:max-h-[calc(100vh-4rem)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs tracking-[0.25em] text-[var(--muted)]">board settings</p>
@@ -1857,14 +1874,9 @@ export function BoardClient({ data }: { data: BoardPageData }) {
       ) : null}
 
       {showCreateList ? (
-        <div className="fixed inset-0 z-[172] flex items-center justify-center px-4 py-8">
-          <button
-            type="button"
-            aria-label="Close create list"
-            onClick={() => setShowCreateList(false)}
-            className="absolute inset-0 bg-black/55"
-          />
-          <div className="relative z-[173] w-full max-w-lg border border-[var(--border-strong)] bg-[var(--panel)] p-6 text-white shadow-[0_35px_140px_rgba(0,0,0,0.72)]">
+        <div className="fixed inset-0 z-[172] flex items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
+          <div aria-hidden="true" className="absolute inset-0 bg-black/55" />
+          <div className="relative z-[173] soft-scrollbar max-h-[calc(100vh-3rem)] w-full max-w-lg overflow-y-auto border border-[var(--border-strong)] bg-[var(--panel)] p-6 text-white shadow-[0_35px_140px_rgba(0,0,0,0.72)] sm:max-h-[calc(100vh-4rem)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs tracking-[0.25em] text-[var(--muted)]">create list</p>
