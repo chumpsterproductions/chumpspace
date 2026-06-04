@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
+import { getConfiguredSiteUrl } from "@/lib/supabase/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizeDiscordUsername, slugify } from "@/lib/utils";
 
@@ -196,7 +197,8 @@ export async function createWorkspaceInviteLinkAction(workspaceId: string) {
   const headerStore = await headers();
   const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "localhost:3000";
   const protocol = headerStore.get("x-forwarded-proto") ?? "http";
-  const origin = `${protocol}://${host}`;
+  const configuredSiteUrl = getConfiguredSiteUrl();
+  const origin = configuredSiteUrl ?? `${protocol}://${host}`;
   const token = crypto.randomUUID();
 
   const { error } = await supabase.from("workspace_invites").insert({

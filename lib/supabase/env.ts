@@ -9,3 +9,13 @@ export function getSupabasePublishableKey() {
     ""
   );
 }
+
+export function getConfiguredSiteUrl() {
+  const value = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+
+  if (value != null && value.length > 0) {
+    return value.replace(/\/+$/, "");
+  }
+
+  return null;
+}

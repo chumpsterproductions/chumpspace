@@ -1,7 +1,11 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/env";
+import {
+  getConfiguredSiteUrl,
+  getSupabasePublishableKey,
+  getSupabaseUrl,
+} from "@/lib/supabase/env";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -9,7 +13,8 @@ export async function GET(request: Request) {
   const headerStore = await headers();
   const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "localhost:3000";
   const protocol = headerStore.get("x-forwarded-proto") ?? "http";
-  const origin = `${protocol}://${host}`;
+  const configuredSiteUrl = getConfiguredSiteUrl();
+  const origin = configuredSiteUrl ?? `${protocol}://${host}`;
   const response = new NextResponse(null, {
     status: 302,
   });
