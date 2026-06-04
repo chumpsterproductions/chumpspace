@@ -613,6 +613,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
 
     const formData = new FormData(cardFormRef.current);
     const snapshot = createListsSnapshot();
+    const previousIsCompleted = completedDraft;
     const nextIsCompleted = nextCompleted ?? completedDraft;
     const patch = {
       title: String(formData.get("title") ?? "").trim(),
@@ -684,7 +685,10 @@ export function BoardClient({ data }: { data: BoardPageData }) {
         async () => {
           await updateCardAction(formData);
         },
-        () => restoreLists(snapshot),
+        () => {
+          restoreLists(snapshot);
+          setCompletedDraft(previousIsCompleted);
+        },
         nextCompleted == null ? "card saved." : nextIsCompleted ? "card completed." : "card reopened.",
       );
     });
@@ -796,7 +800,11 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                                       y: event.clientY,
                                     });
                                   }}
-                                  className="surface w-full min-w-0 overflow-hidden p-4 text-left transition hover:-translate-y-0.5"
+                                  className={`w-full min-w-0 overflow-hidden p-4 text-left transition hover:-translate-y-0.5 ${
+                                    card.is_completed
+                                      ? "surface border-[var(--border-strong)] bg-[var(--accent-soft)] shadow-[inset_0_0_0_1px_rgba(79,126,255,0.12)]"
+                                      : "surface"
+                                  }`}
                                 >
                                   {coverImage ? (
                                     <img
@@ -817,7 +825,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                                   </div>
 
                                   <div className="mt-3 flex items-start justify-between gap-3">
-                                    <h3 className="min-w-0 break-words font-medium">{card.title}</h3>
+                                    <h3 className={`min-w-0 break-words font-medium ${card.is_completed ? "text-[#c4d3ff]" : ""}`}>{card.title}</h3>
                                     {card.is_completed ? (
                                       <span className="inline-flex shrink-0 items-center justify-center border border-[var(--border-strong)] bg-[var(--accent-soft)] p-1 text-[#a9c0ff]">
                                         <Check className="h-4 w-4" />
@@ -825,7 +833,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                                     ) : null}
                                   </div>
                                   {card.description ? (
-                                    <p className="mt-2 line-clamp-2 text-sm text-[var(--muted)]">{card.description}</p>
+                                    <p className={`mt-2 line-clamp-2 text-sm ${card.is_completed ? "text-[#9fb6ff]" : "text-[var(--muted)]"}`}>{card.description}</p>
                                   ) : null}
 
                                   <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-[var(--muted)]">
