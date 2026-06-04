@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Chumpspace
 
-## Getting Started
+Chumpspace is a semi-barebones Trello-style collaboration app built with Next.js App Router and Supabase, designed to deploy on the Vercel free plan.
 
-First, run the development server:
+## Included features
+
+- Email/password auth, Discord auth, and account profiles
+- Workspaces with member invitations
+- Boards with visibility and starring
+- Drag-and-drop lists and cards
+- Card details with descriptions, due dates, start dates, cover colors, completion state
+- Labels, assignees, checklists, comments, attachments, image uploads, activity feed
+- `@handle` mentions with dashboard notifications
+- Profile photo uploads
+- Card and list archiving
+- Lightweight collaboration via periodic refresh, which keeps the app Vercel-friendly
+
+## Stack
+
+- Next.js 16
+- React 19
+- Tailwind CSS 4
+- Supabase Auth + Postgres + Storage
+- `@dnd-kit` for drag and drop
+
+## Setup
+
+1. Create a Supabase project.
+2. In Supabase SQL Editor, run [`supabase/schema.sql`](/C:/Users/ivads/Documents/GAME-PROJECTS/RBX-PROJECTS/chumpspace/supabase/schema.sql).
+3. Copy `.env.example` to `.env.local` and fill in:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+If you only have the older legacy client key available, you can use:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. In Supabase Auth settings:
+   - Set the site URL to your Vercel domain or local URL.
+   - Add `/auth/callback` as an auth redirect path if you enable email confirmation or OAuth later.
+   - Enable Discord provider if you want Discord sign-in.
+   - If you want instant local signup, disable email confirmation for development.
+5. Run:
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Deploying to Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Push this project to GitHub.
+2. Import it into Vercel.
+3. Add the same two environment variables in Vercel.
+4. Deploy.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Because auth, Postgres, storage, and mentions are handled by Supabase's free tier, the app stays within Vercel free-plan constraints without requiring a paid service.
