@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState, useTransition } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, closestCorners, useSensor, useSensors } from "@dnd-kit/core";
@@ -81,7 +81,7 @@ function SortableListShell({
         boxShadow: sortable.isDragging ? "0 35px 120px rgba(0,0,0,0.72)" : undefined,
       }}
       {...sortable.attributes}
-      className="board-column-enter"
+      className="board-column-enter w-[360px] min-w-[360px] max-w-[360px]"
     >
       <div {...sortable.listeners}>{children}</div>
     </div>
@@ -121,6 +121,7 @@ function SortableCardShell({
       }}
       {...sortable.attributes}
       {...sortable.listeners}
+      className="w-full min-w-0"
     >
       {children}
     </div>
@@ -149,6 +150,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
   const [draggedListId, setDraggedListId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<CardContextMenu | null>(null);
+  const cardFormRef = useRef<HTMLFormElement | null>(null);
   const [, startTransition] = useTransition();
 
   useEffect(() => {
@@ -604,6 +606,90 @@ export function BoardClient({ data }: { data: BoardPageData }) {
     });
   }
 
+  function submitSelectedCardUpdate(nextCompleted?: boolean) {
+    if (selectedCard == null || cardFormRef.current == null) {
+      return;
+    }
+
+    const formData = new FormData(cardFormRef.current);
+    const snapshot = createListsSnapshot();
+    const nextIsCompleted = nextCompleted ?? completedDraft;
+    const patch = {
+      title: String(formData.get("title") ?? "").trim(),
+      description: String(formData.get("description") ?? "").trim() || null,
+      start_at: null,
+      due_at: null,
+      cover_color: selectedCard.cover_color ?? null,
+      is_completed: nextIsCompleted,
+    };
+
+    formData.set("coverColor", selectedCard.cover_color ?? "");
+    formData.set("isCompleted", nextIsCompleted ? "true" : "false");
+
+    const completedTargetListId = getCompletedTargetListId(patch.is_completed);
+    const targetListLength = completedTargetListId == null
+      ? 0
+      : (boardData.lists.find((list) => list.id === completedTargetListId)?.cards.length ?? 0);
+
+    setCompletedDraft(nextIsCompleted);
+    setBoardData((current) => ({
+      ...current,
+      lists: current.lists.map((list) => {
+        const cardToMove = list.cards.find((card) => card.id === selectedCard.id);
+
+        if (cardToMove == null) {
+          if (completedTargetListId != null && list.id === completedTargetListId) {
+            return {
+              ...list,
+              cards: [
+                ...list.cards,
+                {
+                  ...selectedCard,
+                  ...patch,
+                  list_id: completedTargetListId,
+                  position: targetListLength,
+                },
+              ],
+            };
+          }
+
+          return list;
+        }
+
+        if (completedTargetListId != null && list.id !== completedTargetListId) {
+          return {
+            ...list,
+            cards: list.cards.filter((card) => card.id !== selectedCard.id),
+          };
+        }
+
+        return {
+          ...list,
+          cards: list.cards.map((card) => (
+            card.id === selectedCard.id
+              ? {
+                ...card,
+                ...patch,
+                list_id: completedTargetListId ?? card.list_id,
+                position: completedTargetListId != null ? targetListLength : card.position,
+              }
+              : card
+          )),
+        };
+      }),
+    }));
+
+    startTransition(async () => {
+      await runOptimisticBoardAction(
+        async () => {
+          await updateCardAction(formData);
+        },
+        () => restoreLists(snapshot),
+        nextCompleted == null ? "card saved." : nextIsCompleted ? "card completed." : "card reopened.",
+      );
+    });
+  }
+
   return (
     <div className="min-h-screen grainy-bg px-4 py-5 sm:px-6 lowercase">
       <div
@@ -675,7 +761,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
               <div className="soft-scrollbar flex min-h-[72vh] items-start gap-4 overflow-x-auto pb-4">
                 {filteredLists.map((list) => (
                   <SortableListShell key={list.id} id={list.id}>
-                    <section className="panel flex min-h-[14rem] w-[360px] min-w-[360px] shrink-0 flex-col p-4">
+                    <section className="panel flex min-h-[14rem] w-full min-w-0 flex-col overflow-hidden p-4">
                       <div className="mb-4 flex items-start justify-between gap-3">
                         <form action={updateListTitleAction} className="flex-1">
                           <input type="hidden" name="boardId" value={boardData.board.id} />
@@ -1135,9 +1221,12 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCompletedDraft((current) => current == false)}
+                  onClick={() => {
+                    submitSelectedCardUpdate(completedDraft == false);
+                  }}
                   className={`surface p-3 transition ${completedDraft ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[#c4d3ff]" : "text-white/80"}`}
                   aria-label="Toggle completed"
+                  aria-pressed={completedDraft}
                 >
                   <Check className="h-4 w-4" />
                 </button>
@@ -1207,81 +1296,11 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                   ) : null}
 
                   <form
+                    ref={cardFormRef}
                     className="grid gap-3"
                     onSubmit={(event) => {
                       event.preventDefault();
-                      const formData = new FormData(event.currentTarget);
-                      const snapshot = createListsSnapshot();
-                      const patch = {
-                        title: String(formData.get("title") ?? "").trim(),
-                        description: String(formData.get("description") ?? "").trim() || null,
-                        start_at: null,
-                        due_at: null,
-                        cover_color: String(formData.get("coverColor") ?? "").trim() || null,
-                        is_completed: completedDraft,
-                      };
-
-                      const completedTargetListId = getCompletedTargetListId(patch.is_completed);
-                      const targetListLength = completedTargetListId == null
-                        ? 0
-                        : (boardData.lists.find((list) => list.id === completedTargetListId)?.cards.length ?? 0);
-
-                      setBoardData((current) => ({
-                        ...current,
-                        lists: current.lists.map((list) => {
-                          const cardToMove = list.cards.find((card) => card.id === selectedCard.id);
-
-                          if (cardToMove == null) {
-                            if (completedTargetListId != null && list.id === completedTargetListId) {
-                              return {
-                                ...list,
-                                cards: [
-                                  ...list.cards,
-                                  {
-                                    ...selectedCard,
-                                    ...patch,
-                                    list_id: completedTargetListId,
-                                    position: targetListLength,
-                                  },
-                                ],
-                              };
-                            }
-
-                            return list;
-                          }
-
-                          if (completedTargetListId != null && list.id !== completedTargetListId) {
-                            return {
-                              ...list,
-                              cards: list.cards.filter((card) => card.id !== selectedCard.id),
-                            };
-                          }
-
-                          return {
-                            ...list,
-                            cards: list.cards.map((card) => (
-                              card.id === selectedCard.id
-                                ? {
-                                  ...card,
-                                  ...patch,
-                                  list_id: completedTargetListId ?? card.list_id,
-                                  position: completedTargetListId != null ? targetListLength : card.position,
-                                }
-                                : card
-                            )),
-                          };
-                        }),
-                      }));
-
-                      startTransition(async () => {
-                        await runOptimisticBoardAction(
-                          async () => {
-                            await updateCardAction(formData);
-                          },
-                          () => restoreLists(snapshot),
-                          "card saved.",
-                        );
-                      });
+                      submitSelectedCardUpdate();
                     }}
                   >
                     <input type="hidden" name="boardId" value={boardData.board.id} />
@@ -1296,7 +1315,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                       profiles={boardData.members.map((member) => member.profile)}
                       rows={6}
                       placeholder="describe the work, acceptance criteria, links, notes. use @handles to ping people."
-                      className="surface min-w-full max-w-none resize-x overflow-auto px-4 py-3"
+                      className="surface min-w-full max-w-full resize-x overflow-auto px-4 py-3"
                     />
                     <button className="bg-[linear-gradient(135deg,#5c87ff,#3d6cff)] px-4 py-3 font-medium text-white">
                       save card
@@ -1403,7 +1422,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                         rows={4}
                         required
                         placeholder="leave an update for the team. use @handles to ping people."
-                        className="surface min-w-full max-w-none resize-x overflow-auto px-4 py-3"
+                        className="surface min-w-full max-w-full resize-x overflow-auto px-4 py-3"
                       />
                       <button className="surface px-4 py-3 font-medium">post comment</button>
                     </form>

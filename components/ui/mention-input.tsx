@@ -109,7 +109,7 @@ export function MentionInput({
   }
 
   return (
-    <div className="relative">
+    <div className="relative max-w-full overflow-x-auto">
       <textarea
         ref={textareaRef}
         name={name}
