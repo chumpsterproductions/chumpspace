@@ -1259,7 +1259,15 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                         <form action={createLabelAction} className="flex items-center gap-2">
                           <input type="hidden" name="boardId" value={boardData.board.id} />
                           <input name="name" required placeholder="urgent" className="surface w-28 px-3 py-2 text-xs" />
-                          <input name="color" defaultValue="#4f7eff" className="surface w-24 px-3 py-2 text-xs" />
+                          <label className="surface flex h-9 w-12 items-center justify-center px-2 py-2">
+                            <input
+                              name="color"
+                              type="color"
+                              defaultValue="#4f7eff"
+                              className="h-5 w-8 cursor-pointer border-0 bg-transparent p-0"
+                              aria-label="Label color"
+                            />
+                          </label>
                           <button className="surface px-3 py-2 text-xs">add</button>
                         </form>
                       </div>
