@@ -147,8 +147,9 @@ export async function getBoardPageData(boardId: string, userId: string): Promise
       .order("position"),
     supabase
       .from("cards")
-      .select("id, board_id, list_id, title, description, position, due_at, start_at, cover_color, archived_at, is_completed")
+      .select("id, board_id, list_id, title, description, position, is_pinned, due_at, start_at, cover_color, archived_at, is_completed")
       .eq("board_id", boardId)
+      .order("is_pinned", { ascending: false })
       .order("position"),
     supabase
       .from("activity_logs")
@@ -275,7 +276,13 @@ export async function getBoardPageData(boardId: string, userId: string): Promise
 
   const mappedLists: ListRecord[] = (lists ?? []).map((list: any) => ({
     ...list,
-    cards: (cardsByList.get(list.id) ?? []).sort((a, b) => a.position - b.position),
+    cards: (cardsByList.get(list.id) ?? []).sort((a, b) => {
+      if (a.is_pinned !== b.is_pinned) {
+        return a.is_pinned ? -1 : 1;
+      }
+
+      return a.position - b.position;
+    }),
   }));
 
   return {

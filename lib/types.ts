@@ -95,6 +95,7 @@ export type CardRecord = {
   title: string;
   description: string | null;
   position: number;
+  is_pinned: boolean;
   due_at: string | null;
   start_at: string | null;
   cover_color: string | null;

@@ -15,6 +15,7 @@ import {
   ImageUp,
   MessageSquare,
   Paperclip,
+  Pin,
   Plus,
   Settings2,
   Tags,
@@ -147,6 +148,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [commentDraft, setCommentDraft] = useState("");
   const [completedDraft, setCompletedDraft] = useState(false);
+  const [pinnedDraft, setPinnedDraft] = useState(false);
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
   const [draggedListId, setDraggedListId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<CardContextMenu | null>(null);
@@ -240,7 +242,8 @@ export function BoardClient({ data }: { data: BoardPageData }) {
     setCommentDraft("");
     setShowLabelEditor(false);
     setCompletedDraft(selectedCard?.is_completed ?? false);
-  }, [selectedCard?.description, selectedCard?.id, selectedCard?.is_completed]);
+    setPinnedDraft(selectedCard?.is_pinned ?? false);
+  }, [selectedCard?.description, selectedCard?.id, selectedCard?.is_completed, selectedCard?.is_pinned]);
 
   useEffect(() => {
     if (selectedCard == null) {
@@ -298,21 +301,29 @@ export function BoardClient({ data }: { data: BoardPageData }) {
       .filter((list) => list.archived_at == null)
       .map((list) => ({
         ...list,
-        cards: list.cards.filter((card) => {
-          if (card.archived_at != null) {
-            return false;
-          }
+        cards: list.cards
+          .filter((card) => {
+            if (card.archived_at != null) {
+              return false;
+            }
 
-          const matchesText =
-            filterText.length === 0 ||
-            card.title.toLowerCase().includes(filterText.toLowerCase()) ||
-            (card.description ?? "").toLowerCase().includes(filterText.toLowerCase());
+            const matchesText =
+              filterText.length === 0 ||
+              card.title.toLowerCase().includes(filterText.toLowerCase()) ||
+              (card.description ?? "").toLowerCase().includes(filterText.toLowerCase());
 
-          const matchesLabel =
-            selectedLabelId === "all" || card.labels.some((label) => label.id === selectedLabelId);
+            const matchesLabel =
+              selectedLabelId === "all" || card.labels.some((label) => label.id === selectedLabelId);
 
-          return matchesText && matchesLabel;
-        }),
+            return matchesText && matchesLabel;
+          })
+          .sort((a, b) => {
+            if (a.is_pinned !== b.is_pinned) {
+              return a.is_pinned ? -1 : 1;
+            }
+
+            return a.position - b.position;
+          }),
       }));
   }, [boardData.lists, filterText, selectedLabelId]);
 
@@ -606,7 +617,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
     });
   }
 
-  function submitSelectedCardUpdate(nextCompleted?: boolean) {
+  function submitSelectedCardUpdate(options?: { nextCompleted?: boolean; nextPinned?: boolean; successMessage?: string }) {
     if (selectedCard == null || cardFormRef.current == null) {
       return;
     }
@@ -614,17 +625,21 @@ export function BoardClient({ data }: { data: BoardPageData }) {
     const formData = new FormData(cardFormRef.current);
     const snapshot = createListsSnapshot();
     const previousIsCompleted = completedDraft;
-    const nextIsCompleted = nextCompleted ?? completedDraft;
+    const previousIsPinned = pinnedDraft;
+    const nextIsCompleted = options?.nextCompleted ?? completedDraft;
+    const nextIsPinned = options?.nextPinned ?? pinnedDraft;
     const patch = {
       title: String(formData.get("title") ?? "").trim(),
       description: String(formData.get("description") ?? "").trim() || null,
       start_at: null,
       due_at: null,
       cover_color: selectedCard.cover_color ?? null,
+      is_pinned: nextIsPinned,
       is_completed: nextIsCompleted,
     };
 
     formData.set("coverColor", selectedCard.cover_color ?? "");
+    formData.set("isPinned", nextIsPinned ? "true" : "false");
     formData.set("isCompleted", nextIsCompleted ? "true" : "false");
 
     const completedTargetListId = getCompletedTargetListId(patch.is_completed);
@@ -633,6 +648,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
       : (boardData.lists.find((list) => list.id === completedTargetListId)?.cards.length ?? 0);
 
     setCompletedDraft(nextIsCompleted);
+    setPinnedDraft(nextIsPinned);
     setBoardData((current) => ({
       ...current,
       lists: current.lists.map((list) => {
@@ -688,8 +704,9 @@ export function BoardClient({ data }: { data: BoardPageData }) {
         () => {
           restoreLists(snapshot);
           setCompletedDraft(previousIsCompleted);
+          setPinnedDraft(previousIsPinned);
         },
-        nextCompleted == null ? "card saved." : nextIsCompleted ? "card completed." : "card reopened.",
+        options?.successMessage ?? "card saved.",
       );
     });
   }
@@ -716,7 +733,13 @@ export function BoardClient({ data }: { data: BoardPageData }) {
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="flex flex-col gap-3 lg:min-w-[38rem]">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-white/70">
+                <span>{boardData.members.length} collaborators</span>
+                <span>{filteredLists.length} lists</span>
+                <span>{filteredLists.reduce((total, list) => total + list.cards.length, 0)} cards</span>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1.4fr)_220px_auto_auto]">
               <input
                 value={filterText}
                 onChange={(event) => setFilterText(event.target.value)}
@@ -724,27 +747,27 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                 className="surface bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/45"
               />
               <CustomDropdown value={selectedLabelId} onChange={setSelectedLabelId} options={labelOptions} />
-              <div className="surface bg-transparent px-4 py-3 text-sm text-white/80">
-                {boardData.members.length} collaborators
-              </div>
               <button
                 type="button"
                 onClick={() => setShowActivity((current) => current == false)}
-                className={`surface inline-flex items-center justify-center gap-2 px-4 py-3 text-sm transition ${
+                className={`surface inline-flex items-center justify-center gap-2 px-3 py-3 text-sm transition ${
                   showActivity ? "border-[var(--border-strong)] text-[#c4d3ff]" : "text-white/80"
                 }`}
+                aria-label={showActivity ? "Hide activity" : "Show activity"}
               >
                 <Activity className="h-4 w-4" />
-                {showActivity ? "hide activity" : "show activity"}
+                <span className="hidden md:inline">{showActivity ? "hide activity" : "activity"}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setShowBoardSettings(true)}
-                className="surface flex cursor-pointer items-center justify-center gap-2 px-4 py-3 text-sm text-white/80 transition hover:border-[var(--border-strong)]"
+                className="surface flex cursor-pointer items-center justify-center gap-2 px-3 py-3 text-sm text-white/80 transition hover:border-[var(--border-strong)]"
+                aria-label="Board settings"
               >
                 <Settings2 className="h-4 w-4" />
-                board settings
+                <span className="hidden md:inline">settings</span>
               </button>
+            </div>
             </div>
           </div>
         </header>
@@ -826,11 +849,18 @@ export function BoardClient({ data }: { data: BoardPageData }) {
 
                                   <div className="mt-3 flex items-start justify-between gap-3">
                                     <h3 className={`min-w-0 break-words font-medium ${card.is_completed ? "text-[#c4d3ff]" : ""}`}>{card.title}</h3>
-                                    {card.is_completed ? (
-                                      <span className="inline-flex shrink-0 items-center justify-center border border-[var(--border-strong)] bg-[var(--accent-soft)] p-1 text-[#a9c0ff]">
-                                        <Check className="h-4 w-4" />
-                                      </span>
-                                    ) : null}
+                                    <div className="flex shrink-0 items-center gap-1">
+                                      {card.is_pinned ? (
+                                        <span className="inline-flex items-center justify-center border border-[var(--border-strong)] bg-[var(--accent-soft)] p-1 text-[#a9c0ff]">
+                                          <Pin className="h-3.5 w-3.5" />
+                                        </span>
+                                      ) : null}
+                                      {card.is_completed ? (
+                                        <span className="inline-flex items-center justify-center border border-[var(--border-strong)] bg-[var(--accent-soft)] p-1 text-[#a9c0ff]">
+                                          <Check className="h-4 w-4" />
+                                        </span>
+                                      ) : null}
+                                    </div>
                                   </div>
                                   {card.description ? (
                                     <p className={`mt-2 line-clamp-2 text-sm ${card.is_completed ? "text-[#9fb6ff]" : "text-[var(--muted)]"}`}>{card.description}</p>
@@ -912,6 +942,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                             title,
                             description: null,
                             position: list.cards.length,
+                            is_pinned: false,
                             due_at: null,
                             start_at: null,
                             cover_color: null,
@@ -1060,6 +1091,50 @@ export function BoardClient({ data }: { data: BoardPageData }) {
             type="button"
             onClick={() => {
               const snapshot = createListsSnapshot();
+              const nextPinned = contextMenuCard.is_pinned == false;
+
+              setBoardData((current) => ({
+                ...current,
+                lists: current.lists.map((list) => ({
+                  ...list,
+                  cards: list.cards.map((card) => (
+                    card.id === contextMenuCard.id
+                      ? { ...card, is_pinned: nextPinned }
+                      : card
+                  )),
+                })),
+              }));
+              setContextMenu(null);
+
+              startTransition(async () => {
+                const formData = new FormData();
+                formData.set("boardId", boardData.board.id);
+                formData.set("cardId", contextMenuCard.id);
+                formData.set("title", contextMenuCard.title);
+                formData.set("description", contextMenuCard.description ?? "");
+                formData.set("coverColor", contextMenuCard.cover_color ?? "");
+                formData.set("isPinned", nextPinned ? "true" : "false");
+                if (contextMenuCard.is_completed) {
+                  formData.set("isCompleted", "true");
+                }
+
+                await runOptimisticBoardAction(
+                  async () => {
+                    await updateCardAction(formData);
+                  },
+                  () => restoreLists(snapshot),
+                  nextPinned ? "card pinned." : "card unpinned.",
+                );
+              });
+            }}
+            className="surface mt-2 w-full px-4 py-3 text-left"
+          >
+            {contextMenuCard.is_pinned ? "unpin card" : "pin card"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const snapshot = createListsSnapshot();
               const nextCompleted = contextMenuCard.is_completed == false;
               const completedTargetListId = getCompletedTargetListId(nextCompleted);
               const targetListLength = completedTargetListId == null
@@ -1114,6 +1189,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                 formData.set("title", contextMenuCard.title);
                 formData.set("description", contextMenuCard.description ?? "");
                 formData.set("coverColor", contextMenuCard.cover_color ?? "");
+                formData.set("isPinned", contextMenuCard.is_pinned ? "true" : "false");
                 if (nextCompleted) {
                   formData.set("isCompleted", "true");
                 }
@@ -1230,7 +1306,24 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                 <button
                   type="button"
                   onClick={() => {
-                    submitSelectedCardUpdate(completedDraft == false);
+                    submitSelectedCardUpdate({
+                      nextPinned: pinnedDraft == false,
+                      successMessage: pinnedDraft ? "card unpinned." : "card pinned.",
+                    });
+                  }}
+                  className={`surface p-3 transition ${pinnedDraft ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[#c4d3ff]" : "text-white/80"}`}
+                  aria-label="Toggle pinned"
+                  aria-pressed={pinnedDraft}
+                >
+                  <Pin className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    submitSelectedCardUpdate({
+                      nextCompleted: completedDraft == false,
+                      successMessage: completedDraft ? "card reopened." : "card completed.",
+                    });
                   }}
                   className={`surface p-3 transition ${completedDraft ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[#c4d3ff]" : "text-white/80"}`}
                   aria-label="Toggle completed"
@@ -1316,12 +1409,13 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                     className="grid gap-3"
                     onSubmit={(event) => {
                       event.preventDefault();
-                      submitSelectedCardUpdate();
+                    submitSelectedCardUpdate();
                     }}
                   >
                     <input type="hidden" name="boardId" value={boardData.board.id} />
                     <input type="hidden" name="cardId" value={selectedCard.id} />
                     <input type="hidden" name="coverColor" value={selectedCard.cover_color ?? ""} />
+                    <input type="hidden" name="isPinned" value={pinnedDraft ? "true" : "false"} />
                     <input type="hidden" name="isCompleted" value={completedDraft ? "true" : "false"} />
                     <input name="title" defaultValue={selectedCard.title} required className="surface px-4 py-3" />
                     <MentionInput

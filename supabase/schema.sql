@@ -68,6 +68,7 @@ create table if not exists public.cards (
   title text not null,
   description text,
   position integer not null default 0,
+  is_pinned boolean not null default false,
   due_at timestamptz,
   start_at timestamptz,
   cover_color text,

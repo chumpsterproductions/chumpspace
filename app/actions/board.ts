@@ -287,6 +287,7 @@ export async function updateCardAction(formData: FormData) {
   const patch = {
     title: String(formData.get("title") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim() || null,
+    is_pinned: String(formData.get("isPinned") ?? "false") === "true",
     due_at: String(formData.get("dueAt") ?? "").trim() || null,
     start_at: String(formData.get("startAt") ?? "").trim() || null,
     cover_color: String(formData.get("coverColor") ?? "").trim() || null,
