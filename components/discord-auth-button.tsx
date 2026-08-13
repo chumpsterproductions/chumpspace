@@ -1,12 +1,11 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+
 export function DiscordAuthButton() {
   return (
-    <a
-      href="/auth/discord"
-      className="surface px-4 py-3 text-sm transition hover:border-[var(--border-strong)] hover:text-[#a9c0ff]"
-    >
-      continue with discord
-    </a>
+    <Button asChild size="lg" className="w-full">
+      <a href="/auth/discord">Continue with Discord</a>
+    </Button>
   );
 }

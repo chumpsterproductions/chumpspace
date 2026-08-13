@@ -44,7 +44,9 @@ import {
   uploadCardImageAction,
 } from "@/app/actions/board";
 import { MentionText } from "@/components/mention-text";
+import { Button } from "@/components/ui/button";
 import { FileInput } from "@/components/ui/file-input";
+import { Input } from "@/components/ui/input";
 import { MentionInput } from "@/components/ui/mention-input";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -730,23 +732,23 @@ export function BoardClient({ data }: { data: BoardPageData }) {
   }
 
   return (
-    <div className="min-h-screen grainy-bg px-4 py-5 sm:px-6 lowercase">
+    <div className="min-h-screen grainy-bg px-4 py-5 sm:px-6">
       <div
         className={`mx-auto max-w-[1600px] transition duration-200 ${(selectedCard || showBoardSettings || showCreateList) ? "pointer-events-none blur-sm" : ""}`}
       >
-        <header className="mb-5 border border-[var(--border)] bg-[var(--panel)] px-6 py-5 text-white">
+        <header className="mb-5 rounded-xl border border-border bg-card/90 px-5 py-5 text-foreground shadow-sm backdrop-blur-xl sm:px-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <Link href="/dashboard" className="text-sm text-white/70">
-                back to dashboard
+              <Link href="/dashboard" className="text-sm text-muted-foreground transition hover:text-foreground">
+                ← Back to dashboard
               </Link>
-              <p className="mt-3 text-xs tracking-[0.3em] text-white/55">
+              <p className="mt-3 text-xs font-medium uppercase tracking-[0.18em] text-primary">
                 {boardData.board.workspace.name}
               </p>
-              <h1 className="mt-2 text-4xl font-semibold">
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
                 {boardData.board.name}
               </h1>
-              <p className="mt-2 max-w-2xl text-sm text-white/70">
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
                 {boardData.board.description ?? "Shared lists, cards, checklists, comments, labels, and activity."}
               </p>
             </div>
@@ -754,37 +756,35 @@ export function BoardClient({ data }: { data: BoardPageData }) {
             <div className="flex flex-col gap-3 lg:min-w-[38rem]">
               <div className="flex flex-wrap items-center gap-3 text-sm text-white/70">
                 <span>{boardData.members.length} collaborators</span>
-                <span>{filteredLists.length} lists</span>
-                <span>{filteredLists.reduce((total, list) => total + list.cards.length, 0)} cards</span>
+                <span>·</span><span>{filteredLists.length} lists</span>
+                <span>·</span><span>{filteredLists.reduce((total, list) => total + list.cards.length, 0)} cards</span>
               </div>
               <div className="grid gap-3 sm:grid-cols-[minmax(0,1.4fr)_220px_auto_auto]">
-              <input
+              <Input
                 value={filterText}
                 onChange={(event) => setFilterText(event.target.value)}
                 placeholder="search cards"
-                className="surface bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/45"
+                className="h-10 bg-background/65"
               />
               <CustomDropdown value={selectedLabelId} onChange={setSelectedLabelId} options={labelOptions} />
-              <button
+              <Button
                 type="button"
                 onClick={() => setShowActivity((current) => current == false)}
-                className={`surface inline-flex items-center justify-center gap-2 px-3 py-3 text-sm transition ${
-                  showActivity ? "border-[var(--border-strong)] text-[#c4d3ff]" : "text-white/80"
-                }`}
+                variant={showActivity ? "secondary" : "outline"}
                 aria-label={showActivity ? "Hide activity" : "Show activity"}
               >
                 <Activity className="h-4 w-4" />
                 <span className="hidden md:inline">{showActivity ? "hide activity" : "activity"}</span>
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => setShowBoardSettings(true)}
-                className="surface flex cursor-pointer items-center justify-center gap-2 px-3 py-3 text-sm text-white/80 transition hover:border-[var(--border-strong)]"
+                variant="outline"
                 aria-label="Board settings"
               >
                 <Settings2 className="h-4 w-4" />
                 <span className="hidden md:inline">settings</span>
-              </button>
+              </Button>
             </div>
             </div>
           </div>
@@ -997,25 +997,27 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                       >
                         <input type="hidden" name="boardId" value={boardData.board.id} />
                         <input type="hidden" name="listId" value={list.id} />
-                        <input name="title" required placeholder="add a card" className="surface px-4 py-3 text-sm" />
-                        <button className="inline-flex items-center justify-center gap-2 bg-[linear-gradient(135deg,#5c87ff,#3d6cff)] px-4 py-3 text-sm font-medium text-white transition hover:opacity-90">
+                        <Input name="title" required placeholder="Add a card" />
+                        <Button>
                           <Plus className="h-4 w-4" />
-                          add card
-                        </button>
+                          Add card
+                        </Button>
                       </form>
                     </section>
                   </SortableListShell>
                 ))}
 
                 <div className="flex h-fit w-fit shrink-0 items-start pt-1">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => setShowCreateList(true)}
-                    className="surface flex h-12 w-12 items-center justify-center text-white transition hover:border-[var(--border-strong)]"
+                    variant="outline"
+                    size="icon"
+                    className="size-12"
                     aria-label="Add another list"
                   >
                     <Plus className="h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             </SortableContext>

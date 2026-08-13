@@ -17,14 +17,14 @@ export function FileInput({
   const [fileName, setFileName] = useState(emptyLabel);
 
   return (
-    <div className="surface flex items-center gap-3 px-4 py-3 text-sm">
+    <div className="flex h-11 items-center gap-3 rounded-lg border border-input bg-background/70 px-3 text-sm shadow-sm">
       <label
         htmlFor={inputId}
-        className="inline-flex shrink-0 cursor-pointer items-center justify-center border border-[var(--border-strong)] bg-[var(--accent-soft)] px-3 py-2 text-xs font-medium text-[#c4d3ff] transition hover:opacity-90"
+        className="inline-flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-md bg-secondary px-3 text-xs font-medium text-secondary-foreground transition hover:bg-secondary/80"
       >
         {buttonLabel}
       </label>
-      <span className="min-w-0 truncate text-[var(--muted)]">{fileName}</span>
+      <span className="min-w-0 truncate text-muted-foreground">{fileName}</span>
       <input
         id={inputId}
         name={name}

@@ -95,7 +95,7 @@ export function CustomDropdown({
         aria-expanded={isOpen}
         aria-controls={`${id}-listbox`}
         onClick={() => setIsOpen((current) => current === false)}
-        className={`surface flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm text-white transition hover:border-[var(--border-strong)] ${buttonClassName}`}
+        className={`flex h-10 w-full items-center justify-between gap-3 rounded-lg border border-input bg-background/70 px-3 text-left text-sm text-foreground shadow-sm outline-none transition hover:border-ring focus-visible:ring-2 focus-visible:ring-ring/25 ${buttonClassName}`}
       >
         <span className="inline-flex min-w-0 items-center gap-2">
           {selectedOption?.color ? (
@@ -111,7 +111,7 @@ export function CustomDropdown({
         <div
           id={`${id}-listbox`}
           role="listbox"
-          className="absolute left-0 top-[calc(100%+0.6rem)] z-[120] min-w-full border border-[var(--border)] bg-[var(--panel)] p-2 shadow-[0_30px_80px_rgba(0,0,0,0.52)]"
+          className="absolute left-0 top-[calc(100%+0.5rem)] z-[120] min-w-full rounded-lg border border-border bg-popover p-1.5 shadow-xl"
         >
           <div className="grid gap-1">
             {options.map((option) => {
@@ -126,8 +126,8 @@ export function CustomDropdown({
                   onClick={() => updateValue(option.value)}
                   className={`flex w-full items-center justify-between gap-3 border px-3 py-3 text-left text-sm transition ${
                     isSelected
-                      ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[#c4d3ff]"
-                      : "border-transparent bg-[var(--surface-soft)] text-white/82 hover:border-[var(--border)]"
+                      ? "border-transparent bg-accent text-accent-foreground"
+                      : "border-transparent text-muted-foreground hover:bg-accent/70 hover:text-foreground"
                   }`}
                 >
                   <span className="inline-flex min-w-0 items-center gap-2">

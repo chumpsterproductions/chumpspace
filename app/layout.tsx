@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Chumpspace",
-  description: "A Vercel-friendly Trello-style collaboration workspace.",
+  description: "A calm, shared workspace for boards, decisions, and team context.",
 };
 
 export default function RootLayout({
