@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Bell, Building2, Copy, LayoutGrid, Plus, Settings, Upload, User, UserPlus } from "lucide-react";
+import { Bell, Building2, Copy, LayoutGrid, Link2, LogOut, Plus, Save, Settings, Upload, User, UserPlus } from "lucide-react";
 import {
   createBoardAction,
   createWorkspaceAction,
@@ -13,11 +12,12 @@ import {
 } from "@/app/actions/workspace";
 import { signOutAction } from "@/app/actions/auth";
 import { updateProfileAction } from "@/app/actions/profile";
+import { AccentColorPicker } from "@/components/accent-color-picker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FileInput } from "@/components/ui/file-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +29,6 @@ import { formatTimestamp, getProfileHandle } from "@/lib/utils";
 const NOTIFICATION_PERMISSION_KEY = "chumpspace-notification-permission-requested";
 
 export function DashboardShell({ data, initialWorkspaceId }: { data: WorkspaceDashboardData; initialWorkspaceId?: string | null }) {
-  const router = useRouter();
   const [showUserSettings, setShowUserSettings] = useState(false);
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(initialWorkspaceId ?? null);
   const [workspaceSettingsId, setWorkspaceSettingsId] = useState<string | null>(null);
@@ -43,16 +42,11 @@ export function DashboardShell({ data, initialWorkspaceId }: { data: WorkspaceDa
     const nextMap = new Map<string, typeof data.boards>();
     for (const board of data.boards) nextMap.set(board.workspace_id, [...(nextMap.get(board.workspace_id) ?? []), board]);
     return nextMap;
-  }, [data.boards]);
+  }, [data]);
 
   const selectedWorkspace = data.workspaces.find((workspace) => workspace.id === selectedWorkspaceId) ?? null;
   const selectedWorkspaceBoards = selectedWorkspace ? boardsByWorkspace.get(selectedWorkspace.id) ?? [] : [];
   const selectedWorkspaceSettings = data.workspaces.find((workspace) => workspace.id === workspaceSettingsId) ?? null;
-
-  useEffect(() => {
-    const interval = window.setInterval(() => router.refresh(), 10000);
-    return () => window.clearInterval(interval);
-  }, [router]);
 
   useEffect(() => {
     if (!("Notification" in window) || Notification.permission !== "default" || window.localStorage.getItem(NOTIFICATION_PERMISSION_KEY) === "true") return;
@@ -85,8 +79,8 @@ export function DashboardShell({ data, initialWorkspaceId }: { data: WorkspaceDa
               <h1 className="truncate text-2xl font-semibold tracking-tight">Hey, {data.profile.full_name ?? data.profile.email.split("@")[0]}</h1>
             </div>
           </div>
-          <Button type="button" variant="outline" onClick={() => setShowUserSettings(true)}>
-            <Settings /> account
+          <Button type="button" variant="outline" size="icon" onClick={() => setShowUserSettings(true)} aria-label="Account settings" title="Account settings">
+            <Settings />
           </Button>
         </header>
 
@@ -96,13 +90,12 @@ export function DashboardShell({ data, initialWorkspaceId }: { data: WorkspaceDa
               <CardHeader>
                 <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary"><Plus /></div>
                 <CardTitle>Create a workspace</CardTitle>
-                <CardDescription>Give your team a home for its boards.</CardDescription>
               </CardHeader>
               <CardContent>
                 <form action={createWorkspaceAction} className="grid gap-3">
                   <Label htmlFor="workspace-name">Workspace name</Label>
                   <Input id="workspace-name" name="name" required placeholder="Studio operations" />
-                  <Button className="w-full">Create workspace</Button>
+                  <Button size="icon" className="justify-self-end" aria-label="Create workspace" title="Create workspace"><Plus /></Button>
                 </form>
               </CardContent>
             </Card>
@@ -113,7 +106,6 @@ export function DashboardShell({ data, initialWorkspaceId }: { data: WorkspaceDa
               <CardHeader className="flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-xl">Your workspaces</CardTitle>
-                  <CardDescription className="mt-1">Pick up where your team left off.</CardDescription>
                 </div>
                 <Badge variant="outline">{data.workspaces.length} total</Badge>
               </CardHeader>
@@ -134,8 +126,8 @@ export function DashboardShell({ data, initialWorkspaceId }: { data: WorkspaceDa
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <Badge>{workspace.role}</Badge>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => setWorkspaceSettingsId(workspace.id)} aria-label={`Open settings for ${workspace.name}`}><Settings /></Button>
-                        <Button type="button" variant="secondary" onClick={() => setSelectedWorkspaceId(workspace.id)}><LayoutGrid /> Boards</Button>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => setWorkspaceSettingsId(workspace.id)} aria-label={`Open settings for ${workspace.name}`} title="Workspace settings"><Settings /></Button>
+                        <Button type="button" variant="secondary" size="icon" onClick={() => setSelectedWorkspaceId(workspace.id)} aria-label={`Open boards in ${workspace.name}`} title="Open boards"><LayoutGrid /></Button>
                       </div>
                     </div>
                   ))}
@@ -147,7 +139,6 @@ export function DashboardShell({ data, initialWorkspaceId }: { data: WorkspaceDa
             <Card className="bg-card/90 backdrop-blur-xl">
               <CardHeader>
                 <div className="flex items-center gap-2"><Bell className="size-4 text-primary" /><CardTitle className="text-xl">Recent pings</CardTitle></div>
-                <CardDescription>Mentions and updates that need your attention.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-2">
                 {data.notifications.length > 0 ? data.notifications.map((notification) => (
@@ -167,7 +158,6 @@ export function DashboardShell({ data, initialWorkspaceId }: { data: WorkspaceDa
           {selectedWorkspace ? <>
             <DialogHeader>
               <DialogTitle>{selectedWorkspace.name}</DialogTitle>
-              <DialogDescription>Choose a board or create a new one.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-3 sm:grid-cols-2">
               {selectedWorkspaceBoards.map((board) => (
@@ -186,7 +176,7 @@ export function DashboardShell({ data, initialWorkspaceId }: { data: WorkspaceDa
                 <Input name="name" required placeholder="Roadmap, sprint, launch…" />
                 <Textarea name="description" rows={3} placeholder="What is this board for?" />
                 <CustomDropdown name="visibility" options={[{ value: "workspace", label: "Workspace visible" }, { value: "private", label: "Private" }]} />
-                <Button><Plus /> Create board</Button>
+                <Button size="icon" className="justify-self-end" aria-label="Create board" title="Create board"><Plus /></Button>
               </form>
             </> : null}
           </> : null}
@@ -196,23 +186,22 @@ export function DashboardShell({ data, initialWorkspaceId }: { data: WorkspaceDa
       <Dialog open={selectedWorkspaceSettings != null} onOpenChange={(open) => { if (!open) setWorkspaceSettingsId(null); }}>
         <DialogContent>
           {selectedWorkspaceSettings ? <>
-            <DialogHeader><DialogTitle>{selectedWorkspaceSettings.name}</DialogTitle><DialogDescription>Workspace identity and access.</DialogDescription></DialogHeader>
+            <DialogHeader><DialogTitle>{selectedWorkspaceSettings.name}</DialogTitle></DialogHeader>
             <div className="flex items-center gap-4">
               {selectedWorkspaceSettings.icon_url ? <img src={selectedWorkspaceSettings.icon_url} alt="" className="size-14 rounded-xl border border-border object-cover" /> : <div className="flex size-14 items-center justify-center rounded-xl bg-secondary text-primary"><Building2 /></div>}
-              <p className="text-sm text-muted-foreground">Add an icon so this workspace is easy to spot.</p>
             </div>
             <form action={uploadWorkspaceIconAction} className="grid gap-3">
               <input type="hidden" name="workspaceId" value={selectedWorkspaceSettings.id} />
               <Label><span className="mb-2 inline-flex items-center gap-2"><Upload className="size-4" /> Workspace icon</span><FileInput name="icon" accept="image/*" buttonLabel="Choose file" /></Label>
-              <Button variant="secondary">Upload icon</Button>
+              <Button variant="secondary" size="icon" className="justify-self-end" aria-label="Upload workspace icon" title="Upload workspace icon"><Upload /></Button>
             </form>
             {selectedWorkspaceSettings.role === "owner" ? <>
               <Separator />
-              <div><h3 className="flex items-center gap-2 font-medium"><UserPlus className="size-4 text-primary" /> Invite people</h3><p className="mt-1 text-sm text-muted-foreground">Add a Discord user or share a reusable link.</p></div>
+              <h3 className="flex items-center gap-2 font-medium"><UserPlus className="size-4 text-primary" /> Invite people</h3>
               <form action={inviteWorkspaceMemberAction} className="flex gap-2">
                 <input type="hidden" name="workspaceId" value={selectedWorkspaceSettings.id} />
                 <Input name="discordUsername" required placeholder="Discord username" />
-                <Button variant="secondary">Add</Button>
+                <Button variant="secondary" size="icon" aria-label="Add workspace member" title="Add member"><UserPlus /></Button>
               </form>
               <Button type="button" variant="outline" onClick={() => {
                 setWorkspaceActionMessage("Creating invite link…");
@@ -220,8 +209,8 @@ export function DashboardShell({ data, initialWorkspaceId }: { data: WorkspaceDa
                   setInviteLinks((current) => ({ ...current, [selectedWorkspaceSettings.id]: result.url }));
                   setWorkspaceActionMessage("Invite link ready.");
                 }).catch((error: unknown) => setWorkspaceActionMessage(error instanceof Error ? error.message : "Unable to create invite link."));
-              }}>Create invite link</Button>
-              {inviteLinks[selectedWorkspaceSettings.id] ? <div className="flex gap-2"><Input readOnly value={inviteLinks[selectedWorkspaceSettings.id]} /><Button type="button" size="icon" variant="secondary" onClick={() => { void navigator.clipboard.writeText(inviteLinks[selectedWorkspaceSettings.id]); setWorkspaceActionMessage("Invite link copied."); }} aria-label="Copy invite link"><Copy /></Button></div> : null}
+              }} size="icon" aria-label="Create invite link" title="Create invite link"><Link2 /></Button>
+              {inviteLinks[selectedWorkspaceSettings.id] ? <div className="flex gap-2"><Input readOnly value={inviteLinks[selectedWorkspaceSettings.id]} /><Button type="button" size="icon" variant="secondary" onClick={() => { void navigator.clipboard.writeText(inviteLinks[selectedWorkspaceSettings.id]); setWorkspaceActionMessage("Invite link copied."); }} aria-label="Copy invite link" title="Copy invite link"><Copy /></Button></div> : null}
               {workspaceActionMessage ? <p className="text-sm text-muted-foreground">{workspaceActionMessage}</p> : null}
             </> : <p className="text-sm text-muted-foreground">Only the workspace owner can invite new members.</p>}
           </> : null}
@@ -230,7 +219,7 @@ export function DashboardShell({ data, initialWorkspaceId }: { data: WorkspaceDa
 
       <Dialog open={showUserSettings} onOpenChange={setShowUserSettings}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Account settings</DialogTitle><DialogDescription>Manage your Chumpspace profile.</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>Account</DialogTitle></DialogHeader>
           <div className="flex items-center gap-4">
             {data.profile.avatar_url ? <img src={data.profile.avatar_url} alt="" className="avatar-ring size-14 object-cover" /> : <div className="avatar-ring flex size-14 items-center justify-center bg-secondary font-medium">{(data.profile.full_name ?? data.profile.email).slice(0, 2)}</div>}
             <div className="min-w-0"><p className="truncate font-medium">{data.profile.full_name ?? "Discord user"}</p><p className="truncate text-sm text-primary">@{getProfileHandle(data.profile)}</p><p className="truncate text-sm text-muted-foreground">{data.profile.email}</p></div>
@@ -238,10 +227,12 @@ export function DashboardShell({ data, initialWorkspaceId }: { data: WorkspaceDa
           <form action={updateProfileAction} className="grid gap-3">
             <Label htmlFor="display-name" className="flex items-center gap-2"><User className="size-4" /> Display name</Label>
             <Input id="display-name" name="fullName" defaultValue={data.profile.full_name ?? ""} placeholder="Display name" />
-            <Button>Save profile</Button>
+            <Button size="icon" className="justify-self-end" aria-label="Save profile" title="Save profile"><Save /></Button>
           </form>
           <Separator />
-          <form action={signOutAction}><Button variant="outline" className="w-full">Sign out</Button></form>
+          <AccentColorPicker />
+          <Separator />
+          <form action={signOutAction} className="flex justify-end"><Button variant="outline" size="icon" aria-label="Sign out" title="Sign out"><LogOut /></Button></form>
         </DialogContent>
       </Dialog>
     </div>

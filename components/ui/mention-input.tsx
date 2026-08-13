@@ -109,7 +109,7 @@ export function MentionInput({
   }
 
   return (
-    <div className="relative max-w-full overflow-x-auto">
+    <div className="relative w-full min-w-0">
       <textarea
         ref={textareaRef}
         name={name}
@@ -117,7 +117,7 @@ export function MentionInput({
         required={required}
         rows={rows}
         placeholder={placeholder}
-        className={className}
+        className={`w-full ${className ?? ""}`}
         onChange={(event) => {
           onChange(event.target.value);
           refreshMentionMatch(event.target.value, event.target.selectionStart ?? event.target.value.length);
@@ -160,7 +160,7 @@ export function MentionInput({
       />
 
       {suggestions.length > 0 ? (
-        <div className="mention-menu absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 border border-[var(--border-strong)] bg-[var(--panel)] p-2 shadow-[0_24px_80px_rgba(0,0,0,0.65)]">
+        <div className="mention-menu absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 rounded-lg border border-border bg-popover p-2 shadow-xl">
           {suggestions.map((suggestion, index) => (
             <button
               key={suggestion.profile.id}
@@ -170,7 +170,7 @@ export function MentionInput({
                 applySuggestion(suggestion.handle);
               }}
               className={`mention-menu__item flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition ${
-                index === activeIndex ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[#c4d3ff]" : "surface"
+                index === activeIndex ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-primary" : "surface"
               }`}
             >
               {suggestion.profile.avatar_url ? (

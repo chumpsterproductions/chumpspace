@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { Upload } from "lucide-react";
 
 export function FileInput({
   name,
@@ -20,9 +21,11 @@ export function FileInput({
     <div className="flex h-11 items-center gap-3 rounded-lg border border-input bg-background/70 px-3 text-sm shadow-sm">
       <label
         htmlFor={inputId}
-        className="inline-flex h-8 shrink-0 cursor-pointer items-center justify-center rounded-md bg-secondary px-3 text-xs font-medium text-secondary-foreground transition hover:bg-secondary/80"
+        className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md bg-secondary text-secondary-foreground transition hover:bg-secondary/80"
+        aria-label={buttonLabel}
+        title={buttonLabel}
       >
-        {buttonLabel}
+        <Upload className="size-4" />
       </label>
       <span className="min-w-0 truncate text-muted-foreground">{fileName}</span>
       <input

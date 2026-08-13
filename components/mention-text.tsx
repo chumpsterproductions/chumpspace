@@ -83,7 +83,7 @@ function LinkChip({ url }: { url: string }) {
       target="_blank"
       rel="noreferrer"
       title={preview.href}
-      className="my-1 inline-flex max-w-full items-center gap-2 border border-[#7ea6ff] bg-[#7ea6ff]/10 px-2.5 py-1 text-[#a9c0ff] transition hover:border-[#a9c0ff] hover:bg-[#7ea6ff]/16"
+      className="my-1 inline-flex max-w-full items-center gap-2 rounded-md border border-[var(--border-strong)] bg-[var(--accent-soft)] px-2.5 py-1 text-primary transition hover:opacity-90"
     >
       {preview.favicon.length > 0 ? (
         <img src={preview.favicon} alt="" className="h-4 w-4 shrink-0" />

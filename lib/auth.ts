@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizeDiscordUsername } from "@/lib/utils";
 
-function getDiscordUsername(user: {
+export function getDiscordUsername(user: {
   app_metadata?: { provider?: string };
   user_metadata?: Record<string, any>;
 }) {

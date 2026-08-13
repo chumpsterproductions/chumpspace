@@ -9,16 +9,23 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   Activity,
   Archive,
+  ArrowLeft,
   Check,
   CheckSquare,
   ClipboardPaste,
+  ExternalLink,
   ImageUp,
+  Link2,
+  ListPlus,
   MessageSquare,
   Paperclip,
   Pin,
   Plus,
+  Save,
+  Send,
   Settings2,
   Tags,
+  Trash2,
   Users,
   X,
 } from "lucide-react";
@@ -51,7 +58,7 @@ import { MentionInput } from "@/components/ui/mention-input";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { Attachment, BoardPageData, CardRecord, ListRecord } from "@/lib/types";
-import { formatTimestamp, getProfileHandle, isImageUrl } from "@/lib/utils";
+import { formatTimestamp, isImageUrl } from "@/lib/utils";
 
 type CardContextMenu = {
   cardId: string;
@@ -161,16 +168,6 @@ export function BoardClient({ data }: { data: BoardPageData }) {
   useEffect(() => {
     setBoardData(data);
   }, [data]);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      router.refresh();
-    }, 8000);
-
-    return () => {
-      window.clearInterval(interval);
-    };
-  }, [router]);
 
   useEffect(() => {
     if (hasOpenOverlay == false) {
@@ -739,10 +736,10 @@ export function BoardClient({ data }: { data: BoardPageData }) {
         <header className="mb-5 rounded-xl border border-border bg-card/90 px-5 py-5 text-foreground shadow-sm backdrop-blur-xl sm:px-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <Link href="/dashboard" className="text-sm text-muted-foreground transition hover:text-foreground">
-                ← Back to dashboard
-              </Link>
-              <p className="mt-3 text-xs font-medium uppercase tracking-[0.18em] text-primary">
+              <Button asChild variant="ghost" size="icon">
+                <Link href="/dashboard" aria-label="Back to dashboard" title="Back to dashboard"><ArrowLeft /></Link>
+              </Button>
+              <p className="mt-3 text-xs font-medium text-primary">
                 {boardData.board.workspace.name}
               </p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -772,18 +769,18 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                 onClick={() => setShowActivity((current) => current == false)}
                 variant={showActivity ? "secondary" : "outline"}
                 aria-label={showActivity ? "Hide activity" : "Show activity"}
+                title={showActivity ? "Hide activity" : "Show activity"}
               >
                 <Activity className="h-4 w-4" />
-                <span className="hidden md:inline">{showActivity ? "hide activity" : "activity"}</span>
               </Button>
               <Button
                 type="button"
                 onClick={() => setShowBoardSettings(true)}
                 variant="outline"
                 aria-label="Board settings"
+                title="Board settings"
               >
                 <Settings2 className="h-4 w-4" />
-                <span className="hidden md:inline">settings</span>
               </Button>
             </div>
             </div>
@@ -817,7 +814,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                         <form action={archiveListAction}>
                           <input type="hidden" name="boardId" value={boardData.board.id} />
                           <input type="hidden" name="listId" value={list.id} />
-                          <button className="p-2 text-[var(--muted)] transition hover:bg-white/5" aria-label="Archive list">
+                          <button className="rounded-md p-2 text-[var(--muted)] transition hover:bg-white/5" aria-label="Archive list" title="Archive list">
                             <Archive className="h-4 w-4" />
                           </button>
                         </form>
@@ -843,7 +840,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                                   }}
                                   className={`w-full min-w-0 overflow-hidden p-4 text-left transition hover:-translate-y-0.5 ${
                                     card.is_completed
-                                      ? "surface border-[var(--border-strong)] bg-[var(--accent-soft)] shadow-[inset_0_0_0_1px_rgba(79,126,255,0.12)]"
+                                      ? "surface border-[var(--border-strong)] bg-[var(--accent-soft)]"
                                       : "surface"
                                   }`}
                                 >
@@ -866,22 +863,22 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                                   </div>
 
                                   <div className="mt-3 flex items-start justify-between gap-3">
-                                    <h3 className={`min-w-0 break-words font-medium ${card.is_completed ? "text-[#c4d3ff]" : ""}`}>{card.title}</h3>
+                                    <h3 className={`min-w-0 break-words font-medium ${card.is_completed ? "text-primary" : ""}`}>{card.title}</h3>
                                     <div className="flex shrink-0 items-center gap-1">
                                       {card.is_pinned ? (
-                                        <span className="inline-flex items-center justify-center border border-[var(--border-strong)] bg-[var(--accent-soft)] p-1 text-[#a9c0ff]">
+                                        <span className="inline-flex items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--accent-soft)] p-1 text-primary">
                                           <Pin className="h-3.5 w-3.5" />
                                         </span>
                                       ) : null}
                                       {card.is_completed ? (
-                                        <span className="inline-flex items-center justify-center border border-[var(--border-strong)] bg-[var(--accent-soft)] p-1 text-[#a9c0ff]">
+                                        <span className="inline-flex items-center justify-center rounded-md border border-[var(--border-strong)] bg-[var(--accent-soft)] p-1 text-primary">
                                           <Check className="h-4 w-4" />
                                         </span>
                                       ) : null}
                                     </div>
                                   </div>
                                   {card.description ? (
-                                    <p className={`mt-2 line-clamp-2 text-sm ${card.is_completed ? "text-[#9fb6ff]" : "text-[var(--muted)]"}`}>{card.description}</p>
+                                    <p className={`mt-2 line-clamp-2 text-sm ${card.is_completed ? "text-primary/80" : "text-[var(--muted)]"}`}>{card.description}</p>
                                   ) : null}
 
                                   <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-[var(--muted)]">
@@ -998,9 +995,8 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                         <input type="hidden" name="boardId" value={boardData.board.id} />
                         <input type="hidden" name="listId" value={list.id} />
                         <Input name="title" required placeholder="Add a card" />
-                        <Button>
+                        <Button size="icon" className="justify-self-end" aria-label="Add card" title="Add card">
                           <Plus className="h-4 w-4" />
-                          Add card
                         </Button>
                       </form>
                     </section>
@@ -1072,7 +1068,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
 
           {showActivity ? (
             <section className="panel p-5">
-              <p className="text-xs tracking-[0.25em] text-[var(--muted)]">board activity</p>
+              <p className="text-xs text-[var(--muted)]">Board activity</p>
               <h2 className="mt-2 text-2xl font-semibold">recent moves</h2>
               <div className="mt-4 grid gap-3">
                 {boardData.activities.map((activity) => (
@@ -1090,7 +1086,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
 
       {contextMenu != null && contextMenuCard != null ? (
         <div
-          className="fixed z-[120] min-w-56 border border-[var(--border)] bg-[var(--panel)] p-2 text-sm text-white shadow-[0_30px_120px_rgba(0,0,0,0.65)]"
+          className="fixed z-[120] flex gap-1 rounded-lg border border-[var(--border)] bg-[var(--panel)] p-1.5 text-sm text-white shadow-[0_30px_120px_rgba(0,0,0,0.65)]"
           style={{
             left: contextMenu.x,
             top: contextMenu.y,
@@ -1103,9 +1099,11 @@ export function BoardClient({ data }: { data: BoardPageData }) {
               setSelectedCardId(contextMenuCard.id);
               setContextMenu(null);
             }}
-            className="surface w-full px-4 py-3 text-left"
+            className="surface flex size-10 items-center justify-center"
+            aria-label="Open card"
+            title="Open card"
           >
-            open card
+            <ExternalLink className="size-4" />
           </button>
           <button
             type="button"
@@ -1147,9 +1145,11 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                 );
               });
             }}
-            className="surface mt-2 w-full px-4 py-3 text-left"
+            className="surface flex size-10 items-center justify-center"
+            aria-label={contextMenuCard.is_pinned ? "Unpin card" : "Pin card"}
+            title={contextMenuCard.is_pinned ? "Unpin card" : "Pin card"}
           >
-            {contextMenuCard.is_pinned ? "unpin card" : "pin card"}
+            <Pin className="size-4" />
           </button>
           <button
             type="button"
@@ -1223,9 +1223,11 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                 );
               });
             }}
-            className="surface mt-2 w-full px-4 py-3 text-left"
+            className="surface flex size-10 items-center justify-center"
+            aria-label={contextMenuCard.is_completed ? "Mark incomplete" : "Mark complete"}
+            title={contextMenuCard.is_completed ? "Mark incomplete" : "Mark complete"}
           >
-            {contextMenuCard.is_completed ? "mark incomplete" : "mark complete"}
+            <Check className="size-4" />
           </button>
           <button
             type="button"
@@ -1254,9 +1256,11 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                 );
               });
             }}
-            className="surface mt-2 w-full border-[var(--danger)]/30 bg-[var(--danger)]/10 px-4 py-3 text-left text-[var(--danger)]"
+            className="flex size-10 items-center justify-center rounded-lg border border-[var(--danger)]/30 bg-[var(--danger)]/10 text-[var(--danger)]"
+            aria-label="Archive card"
+            title="Archive card"
           >
-            archive card
+            <Archive className="size-4" />
           </button>
         </div>
       ) : null}
@@ -1266,12 +1270,11 @@ export function BoardClient({ data }: { data: BoardPageData }) {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm sm:px-6 sm:py-8"
         >
           <div
-            className="panel soft-scrollbar max-h-[calc(100vh-3rem)] w-full max-w-6xl overflow-y-auto text-white shadow-[0_30px_120px_rgba(0,0,0,0.6)] sm:max-h-[calc(100vh-4rem)]"
+            className="panel soft-scrollbar max-h-[calc(100vh-2rem)] w-full max-w-7xl overflow-y-auto text-white shadow-[0_30px_120px_rgba(0,0,0,0.6)] sm:max-h-[calc(100vh-3rem)]"
           >
             <div className="flex items-start justify-between gap-4 border-b border-[var(--border)] px-6 py-5">
               <div className="min-w-0">
-                <p className="text-xs tracking-[0.25em] text-[var(--muted)]">card details</p>
-                <h2 className="mt-2 break-words text-3xl font-semibold">{selectedCard.title}</h2>
+                <h2 className="break-words text-3xl font-semibold">{selectedCard.title}</h2>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {selectedCard.labels.map((label) => (
                     <span key={label.id} className="px-2.5 py-1 text-xs font-medium text-white" style={{ background: label.color }}>
@@ -1302,22 +1305,20 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                     </div>
                   ) : null}
                 </div>
-                <p className="mt-2 text-sm text-[var(--muted)]">
-                  paste an image from your clipboard anywhere in this window to attach it instantly.
-                </p>
                 {pasteStatus ? (
-                  <p className="mt-2 text-xs text-[#a9c0ff]">{pasteStatus}</p>
+                  <p className="mt-2 text-xs text-primary">{pasteStatus}</p>
                 ) : null}
                 {actionStatus ? (
-                  <p className="mt-2 text-xs text-[#a9c0ff]">{actionStatus}</p>
+                  <p className="mt-2 text-xs text-primary">{actionStatus}</p>
                 ) : null}
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setShowLabelEditor((current) => current == false)}
-                  className={`surface p-3 transition ${showLabelEditor ? "border-[var(--border-strong)] text-[#c4d3ff]" : "text-white/80"}`}
+                  className={`surface p-3 transition ${showLabelEditor ? "border-[var(--border-strong)] text-primary" : "text-white/80"}`}
                   aria-label="Toggle labels"
+                  title="Labels"
                 >
                   <Tags className="h-4 w-4" />
                 </button>
@@ -1329,8 +1330,9 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                       successMessage: pinnedDraft ? "card unpinned." : "card pinned.",
                     });
                   }}
-                  className={`surface p-3 transition ${pinnedDraft ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[#c4d3ff]" : "text-white/80"}`}
+                  className={`surface p-3 transition ${pinnedDraft ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-primary" : "text-white/80"}`}
                   aria-label="Toggle pinned"
+                  title={pinnedDraft ? "Unpin card" : "Pin card"}
                   aria-pressed={pinnedDraft}
                 >
                   <Pin className="h-4 w-4" />
@@ -1343,8 +1345,9 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                       successMessage: completedDraft ? "card reopened." : "card completed.",
                     });
                   }}
-                  className={`surface p-3 transition ${completedDraft ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[#c4d3ff]" : "text-white/80"}`}
+                  className={`surface p-3 transition ${completedDraft ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-primary" : "text-white/80"}`}
                   aria-label="Toggle completed"
+                  title={completedDraft ? "Mark incomplete" : "Mark complete"}
                   aria-pressed={completedDraft}
                 >
                   <Check className="h-4 w-4" />
@@ -1354,6 +1357,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                   onClick={() => setSelectedCardId(null)}
                   className="surface p-3"
                   aria-label="Close card details"
+                  title="Close"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -1361,7 +1365,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
             </div>
 
             <div className="px-6 py-5">
-              <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
                 <div className="grid gap-6">
                   {showLabelEditor ? (
                     <section className="surface grid gap-3 p-4">
@@ -1379,7 +1383,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                               aria-label="Label color"
                             />
                           </label>
-                          <button className="surface px-3 py-2 text-xs">add</button>
+                          <Button size="icon" className="size-9" aria-label="Create label" title="Create label"><Plus /></Button>
                         </form>
                       </div>
                       <div className="grid gap-2">
@@ -1414,7 +1418,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                                 <span className="h-3 w-3" style={{ background: label.color }} />
                                 {label.name}
                               </span>
-                              <span>{active ? "on" : "off"}</span>
+                              {active ? <Check className="size-4" /> : null}
                             </button>
                           );
                         })}
@@ -1441,27 +1445,16 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                       value={descriptionDraft}
                       onChange={setDescriptionDraft}
                       profiles={boardData.members.map((member) => member.profile)}
-                      rows={6}
+                      rows={9}
                       placeholder="describe the work, acceptance criteria, links, notes. use @handles to ping people."
                       className="surface min-w-full max-w-full resize-y overflow-auto px-4 py-3"
                     />
-                    {descriptionDraft.trim().length > 0 ? (
-                      <div className="surface grid gap-2 px-4 py-3 text-sm text-[var(--muted)]">
-                        <p className="text-xs tracking-[0.2em] text-[var(--muted)]">description preview</p>
-                        <MentionText text={descriptionDraft} />
-                      </div>
-                    ) : null}
-                    <button className="bg-[linear-gradient(135deg,#5c87ff,#3d6cff)] px-4 py-3 font-medium text-white">
-                      save card
-                    </button>
+                    <Button size="icon" className="justify-self-end" aria-label="Save card" title="Save card"><Save /></Button>
                   </form>
 
                   <section className="grid gap-3">
                     <div className="flex items-center justify-between gap-3">
                       <h3 className="font-semibold">members</h3>
-                      <span className="text-xs text-[var(--muted)]">
-                        mention with {boardData.members.map((member) => `@${getProfileHandle(member.profile)}`).join(", ")}
-                      </span>
                     </div>
                     <div className="grid gap-2">
                       {boardData.members.map((member) => {
@@ -1490,7 +1483,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                               });
                             }}
                             className={`flex items-center justify-between border px-4 py-3 text-sm transition ${
-                              active ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-[#c4d3ff]" : "surface"
+                              active ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-primary" : "surface"
                             }`}
                           >
                             <span className="inline-flex items-center gap-2">
@@ -1512,25 +1505,19 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                         {isUploadingPaste ? "uploading..." : "paste to attach"}
                       </span>
                     </div>
-                    <div className="surface p-4 text-sm text-[var(--muted)]">
-                      paste an image from your clipboard while this card is open and it will attach here automatically.
-                    </div>
                     <form action={addAttachmentAction} className="surface grid gap-2 p-4">
                       <input type="hidden" name="boardId" value={boardData.board.id} />
                       <input type="hidden" name="cardId" value={selectedCard.id} />
                       <input name="name" required placeholder="figma spec" className="surface px-4 py-3 text-sm" />
                       <input name="url" type="url" required placeholder="https://..." className="surface px-4 py-3 text-sm" />
-                      <button className="surface px-4 py-3 font-medium">add attachment</button>
+                      <Button size="icon" className="justify-self-end" aria-label="Add attachment" title="Add attachment"><Link2 /></Button>
                     </form>
                     <form action={uploadCardImageAction} className="surface grid gap-2 p-4">
                       <input type="hidden" name="boardId" value={boardData.board.id} />
                       <input type="hidden" name="cardId" value={selectedCard.id} />
-                      <label className="inline-flex items-center gap-2 text-xs tracking-[0.2em] text-[var(--muted)]">
-                        <ImageUp className="h-4 w-4" />
-                        upload manually
-                      </label>
+                      <label className="inline-flex items-center gap-2 text-xs text-[var(--muted)]"><ImageUp className="h-4 w-4" /><span className="sr-only">Upload image</span></label>
                       <FileInput name="image" accept="image/*" buttonLabel="choose file" />
-                      <button className="surface px-4 py-3 font-medium">upload image</button>
+                      <Button size="icon" className="justify-self-end" variant="secondary" aria-label="Upload image" title="Upload image"><ImageUp /></Button>
                     </form>
                     <div className="grid gap-2">
                       {selectedCard.attachments.map((attachment) => (
@@ -1600,7 +1587,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                         placeholder="leave an update for the team. use @handles to ping people."
                         className="surface min-w-full max-w-full resize-y overflow-auto px-4 py-3"
                       />
-                      <button className="surface px-4 py-3 font-medium">post comment</button>
+                      <Button size="icon" className="justify-self-end" variant="secondary" aria-label="Post comment" title="Post comment"><Send /></Button>
                     </form>
                     <div className="grid gap-3">
                       {selectedCard.comments.map((comment) => (
@@ -1670,7 +1657,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                         <input type="hidden" name="boardId" value={boardData.board.id} />
                         <input type="hidden" name="cardId" value={selectedCard.id} />
                         <input name="title" required placeholder="tasks" className="surface w-28 px-3 py-2 text-xs" />
-                        <button className="surface px-3 py-2 text-xs">add</button>
+                        <Button size="icon" className="size-9" aria-label="Add checklist" title="Add checklist"><ListPlus /></Button>
                       </form>
                     </div>
 
@@ -1766,7 +1753,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                           <input type="hidden" name="cardId" value={selectedCard.id} />
                           <input type="hidden" name="checklistId" value={checklist.id} />
                           <input name="text" required placeholder="add item" className="surface min-w-0 flex-1 px-3 py-2 text-sm" />
-                          <button className="surface px-3 py-2 text-sm">add</button>
+                          <Button size="icon" aria-label="Add checklist item" title="Add item"><Plus /></Button>
                         </form>
                       </div>
                     ))}
@@ -1775,9 +1762,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                   <form action={archiveCardAction}>
                     <input type="hidden" name="boardId" value={boardData.board.id} />
                     <input type="hidden" name="cardId" value={selectedCard.id} />
-                    <button className="w-full border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-4 py-3 font-medium text-[var(--danger)]">
-                      archive card
-                    </button>
+                    <Button variant="destructive" size="icon" className="ml-auto" aria-label="Archive card" title="Archive card"><Archive /></Button>
                   </form>
                 </div>
               </div>
@@ -1789,11 +1774,10 @@ export function BoardClient({ data }: { data: BoardPageData }) {
       {showBoardSettings ? (
         <div className="fixed inset-0 z-[170] flex items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
           <div aria-hidden="true" className="absolute inset-0 bg-black/55" />
-          <div className="relative z-[171] soft-scrollbar max-h-[calc(100vh-3rem)] w-full max-w-xl overflow-y-auto border border-[var(--border-strong)] bg-[var(--panel)] p-6 text-white shadow-[0_35px_140px_rgba(0,0,0,0.72)] sm:max-h-[calc(100vh-4rem)]">
+          <div className="relative z-[171] soft-scrollbar max-h-[calc(100vh-3rem)] w-full max-w-xl overflow-y-auto rounded-xl border border-border bg-popover p-6 text-popover-foreground shadow-2xl sm:max-h-[calc(100vh-4rem)]">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs tracking-[0.25em] text-[var(--muted)]">board settings</p>
-                <h2 className="mt-2 text-3xl font-semibold">{boardData.board.name}</h2>
+                <h2 className="text-3xl font-semibold">{boardData.board.name}</h2>
               </div>
               <button
                 type="button"
@@ -1835,7 +1819,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
               className="mt-6 grid gap-3"
             >
               <input type="hidden" name="boardId" value={boardData.board.id} />
-              <label className="grid gap-2 text-xs tracking-[0.2em] text-[var(--muted)]">
+              <label className="grid gap-2 text-xs text-[var(--muted)]">
                 <span>send completed items to</span>
                 <CustomDropdown
                   name="completedListId"
@@ -1849,11 +1833,11 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                   options={completedListOptions}
                 />
               </label>
-              <button className="surface px-4 py-3 text-sm font-medium">save settings</button>
+              <Button size="icon" className="justify-self-end" aria-label="Save board settings" title="Save settings"><Save /></Button>
             </form>
 
             <div className="mt-6 border-t border-[var(--border)] pt-6">
-              <p className="text-xs tracking-[0.25em] text-[var(--danger)]">danger zone</p>
+              <p className="text-xs text-[var(--danger)]">Danger zone</p>
               <p className="mt-2 text-sm text-[var(--muted)]">
                 type <span className="text-white">{boardData.board.name}</span> to permanently delete this board.
               </p>
@@ -1866,9 +1850,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                   placeholder={boardData.board.name}
                   className="surface px-4 py-3 text-sm"
                 />
-                <button className="border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-4 py-3 text-sm font-medium text-[var(--danger)]">
-                  delete board
-                </button>
+                <Button variant="destructive" size="icon" className="justify-self-end" aria-label="Delete board" title="Delete board"><Trash2 /></Button>
               </form>
             </div>
           </div>
@@ -1878,11 +1860,10 @@ export function BoardClient({ data }: { data: BoardPageData }) {
       {showCreateList ? (
         <div className="fixed inset-0 z-[172] flex items-center justify-center px-4 py-6 sm:px-6 sm:py-8">
           <div aria-hidden="true" className="absolute inset-0 bg-black/55" />
-          <div className="relative z-[173] soft-scrollbar max-h-[calc(100vh-3rem)] w-full max-w-lg overflow-y-auto border border-[var(--border-strong)] bg-[var(--panel)] p-6 text-white shadow-[0_35px_140px_rgba(0,0,0,0.72)] sm:max-h-[calc(100vh-4rem)]">
+          <div className="relative z-[173] soft-scrollbar max-h-[calc(100vh-3rem)] w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-popover p-6 text-popover-foreground shadow-2xl sm:max-h-[calc(100vh-4rem)]">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs tracking-[0.25em] text-[var(--muted)]">create list</p>
-                <h2 className="mt-2 text-3xl font-semibold">add another list</h2>
+                <h2 className="text-3xl font-semibold">New list</h2>
               </div>
               <button
                 type="button"
@@ -1910,9 +1891,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                 placeholder="ideas, doing, done"
                 className="surface px-4 py-3 text-sm"
               />
-              <button className="surface px-4 py-3 text-sm font-medium transition hover:border-[var(--border-strong)]">
-                create list
-              </button>
+              <Button size="icon" className="justify-self-end" aria-label="Create list" title="Create list"><ListPlus /></Button>
             </form>
           </div>
         </div>

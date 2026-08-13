@@ -118,27 +118,18 @@ export async function getDashboardData(userId: string): Promise<WorkspaceDashboa
 export async function getBoardPageData(boardId: string, userId: string): Promise<BoardPageData> {
   const supabase = await createSupabaseServerClient();
 
-  const { data: board } = await supabase
-    .from("boards")
-    .select("id, workspace_id, name, description, visibility, is_starred, completed_list_id, archived_at, workspace:workspaces(id, name, slug, icon_url)")
-    .eq("id", boardId)
-    .single();
-
-  if (board == null) {
-    notFound();
-  }
-
   const [
-    { data: memberships },
+    { data: board },
     { data: labels },
     { data: lists },
     { data: cards },
     { data: activities },
   ] = await Promise.all([
     supabase
-      .from("workspace_members")
-      .select("profile_id, role, profile:profiles(id, email, full_name, avatar_url, discord_username)")
-      .eq("workspace_id", board.workspace_id),
+      .from("boards")
+      .select("id, workspace_id, name, description, visibility, is_starred, completed_list_id, archived_at, workspace:workspaces(id, name, slug, icon_url)")
+      .eq("id", boardId)
+      .single(),
     supabase.from("labels").select("id, board_id, name, color").eq("board_id", boardId).order("name"),
     supabase
       .from("lists")
@@ -159,16 +150,25 @@ export async function getBoardPageData(boardId: string, userId: string): Promise
       .limit(25),
   ]);
 
+  if (board == null) {
+    notFound();
+  }
+
   const cardIds = (cards ?? []).map((card: any) => card.id);
   const safeCardIds = cardIds.length > 0 ? cardIds : ["00000000-0000-0000-0000-000000000000"];
 
   const [
+    { data: memberships },
     { data: cardMembers },
     { data: cardLabels },
     { data: checklists },
     { data: comments },
     { data: attachments },
   ] = await Promise.all([
+    supabase
+      .from("workspace_members")
+      .select("profile_id, role, profile:profiles(id, email, full_name, avatar_url, discord_username)")
+      .eq("workspace_id", board.workspace_id),
     supabase
       .from("card_members")
       .select("card_id, profile_id, profile:profiles(id, email, full_name, avatar_url, discord_username)")
@@ -179,7 +179,7 @@ export async function getBoardPageData(boardId: string, userId: string): Promise
       .in("card_id", safeCardIds),
     supabase
       .from("checklists")
-      .select("id, card_id, title, position")
+      .select("id, card_id, title, position, items:checklist_items(id, checklist_id, text, position, is_done)")
       .in("card_id", safeCardIds)
       .order("position"),
     supabase
@@ -194,22 +194,10 @@ export async function getBoardPageData(boardId: string, userId: string): Promise
       .order("created_at", { ascending: false }),
   ]);
 
-  const checklistIds = (checklists ?? []).map((checklist: any) => checklist.id);
-  const safeChecklistIds = checklistIds.length > 0
-    ? checklistIds
-    : ["00000000-0000-0000-0000-000000000000"];
-
-  const { data: checklistItems } = await supabase
-    .from("checklist_items")
-    .select("id, checklist_id, text, position, is_done")
-    .in("checklist_id", safeChecklistIds)
-    .order("position");
-
   const labelMap = new Map<string, Label>((labels ?? []).map((label: any) => [label.id, label]));
   const memberByCard = new Map<string, Profile[]>();
   const labelByCard = new Map<string, Label[]>();
   const checklistByCard = new Map<string, Checklist[]>();
-  const checklistItemsByChecklist = new Map<string, ChecklistItem[]>();
   const commentsByCard = new Map<string, Comment[]>();
   const attachmentsByCard = new Map<string, Attachment[]>();
 
@@ -229,17 +217,14 @@ export async function getBoardPageData(boardId: string, userId: string): Promise
     }
   }
 
-  for (const item of checklistItems ?? []) {
-    const existing = checklistItemsByChecklist.get(item.checklist_id) ?? [];
-    existing.push(item as ChecklistItem);
-    checklistItemsByChecklist.set(item.checklist_id, existing);
-  }
-
   for (const checklist of checklists ?? []) {
     const existing = checklistByCard.get(checklist.card_id) ?? [];
     existing.push({
-      ...(checklist as Omit<Checklist, "items">),
-      items: checklistItemsByChecklist.get(checklist.id) ?? [],
+      id: checklist.id,
+      card_id: checklist.card_id,
+      title: checklist.title,
+      position: checklist.position,
+      items: ((checklist.items ?? []) as ChecklistItem[]).sort((a, b) => a.position - b.position),
     });
     checklistByCard.set(checklist.card_id, existing);
   }

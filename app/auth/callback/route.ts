@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/env";
+import { getDiscordUsername } from "@/lib/auth";
 
 function parseRequestCookies(request: Request) {
   return request.headers
@@ -53,6 +54,18 @@ export async function GET(request: Request) {
 
     if (error != null) {
       return NextResponse.redirect(new URL(`/?error=${encodeURIComponent(error.message)}`, request.url));
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user?.email != null) {
+      await supabase.from("profiles").upsert({
+        id: user.id,
+        email: user.email,
+        full_name: user.user_metadata.full_name ?? user.email.split("@")[0],
+        avatar_url: user.user_metadata.avatar_url ?? null,
+        discord_username: getDiscordUsername(user),
+      });
     }
   }
 
