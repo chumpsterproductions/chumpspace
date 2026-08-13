@@ -50,7 +50,7 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: #27272a;
+  --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
@@ -107,6 +107,10 @@ button {
   cursor: pointer;
 }
 
+.bg-primary svg {
+  color: var(--primary-foreground);
+}
+
 ::selection {
   background: color-mix(in srgb, var(--primary) 34%, transparent);
 }
@@ -126,7 +130,7 @@ button {
 
 .grainy-bg::before {
   z-index: -2;
-  background: #09090b;
+  background: var(--background);
 }
 
 .grainy-bg::after {

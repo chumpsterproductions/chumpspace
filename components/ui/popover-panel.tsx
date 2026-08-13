@@ -53,7 +53,7 @@ export function PopoverPanel({
       </button>
       {isOpen ? (
         <div
-          className={`absolute top-[calc(100%+0.75rem)] z-[110] w-full border border-[var(--border)] bg-[var(--panel)] p-5 text-left text-white shadow-[0_24px_80px_rgba(0,0,0,0.45)] ${
+          className={`absolute top-[calc(100%+0.75rem)] z-[110] w-full rounded-lg border border-[var(--border)] bg-[var(--panel)] p-5 text-left text-foreground shadow-[0_24px_80px_rgba(0,0,0,0.45)] ${
             align === "right" ? "right-0" : "left-0"
           } ${panelClassName}`}
         >

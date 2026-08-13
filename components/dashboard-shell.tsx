@@ -222,7 +222,7 @@ export function DashboardShell({ data, initialWorkspaceId }: { data: WorkspaceDa
           <DialogHeader><DialogTitle>Account</DialogTitle></DialogHeader>
           <div className="flex items-center gap-4">
             {data.profile.avatar_url ? <img src={data.profile.avatar_url} alt="" className="avatar-ring size-14 object-cover" /> : <div className="avatar-ring flex size-14 items-center justify-center bg-secondary font-medium">{(data.profile.full_name ?? data.profile.email).slice(0, 2)}</div>}
-            <div className="min-w-0"><p className="truncate font-medium">{data.profile.full_name ?? "Discord user"}</p><p className="truncate text-sm text-primary">@{getProfileHandle(data.profile)}</p><p className="truncate text-sm text-muted-foreground">{data.profile.email}</p></div>
+            <div className="min-w-0"><p className="truncate font-medium">{data.profile.full_name ?? "Discord user"}</p><p className="truncate text-sm text-primary">@{getProfileHandle(data.profile)}</p><p tabIndex={0} className="truncate text-sm text-muted-foreground blur-sm transition duration-200 hover:blur-none focus:blur-none">{data.profile.email}</p></div>
           </div>
           <form action={updateProfileAction} className="grid gap-3">
             <Label htmlFor="display-name" className="flex items-center gap-2"><User className="size-4" /> Display name</Label>

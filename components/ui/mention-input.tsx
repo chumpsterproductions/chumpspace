@@ -181,7 +181,7 @@ export function MentionInput({
                 </div>
               )}
               <span className="min-w-0">
-                <span className="block truncate text-white">@{suggestion.handle}</span>
+                <span className="block truncate text-foreground">@{suggestion.handle}</span>
                 <span className="block truncate text-xs text-[var(--muted)]">
                   {suggestion.profile.full_name ?? suggestion.profile.email}
                 </span>

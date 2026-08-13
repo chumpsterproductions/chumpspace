@@ -101,11 +101,11 @@ export function CustomDropdown({
           {selectedOption?.color ? (
             <span className="h-3 w-3 shrink-0 border border-white/15" style={{ background: selectedOption.color }} />
           ) : null}
-          <span className={`truncate ${selectedOption == null ? "text-white/45" : ""}`}>
+          <span className={`truncate ${selectedOption == null ? "text-muted-foreground" : ""}`}>
             {selectedOption?.label ?? placeholder}
           </span>
         </span>
-        <ChevronDown className={`h-4 w-4 shrink-0 text-white/55 transition ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition ${isOpen ? "rotate-180" : ""}`} />
       </button>
       {isOpen ? (
         <div

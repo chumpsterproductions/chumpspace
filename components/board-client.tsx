@@ -751,7 +751,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
             </div>
 
             <div className="flex flex-col gap-3 lg:min-w-[38rem]">
-              <div className="flex flex-wrap items-center gap-3 text-sm text-white/70">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                 <span>{boardData.members.length} collaborators</span>
                 <span>·</span><span>{filteredLists.length} lists</span>
                 <span>·</span><span>{filteredLists.reduce((total, list) => total + list.cards.length, 0)} cards</span>
@@ -814,7 +814,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                         <form action={archiveListAction}>
                           <input type="hidden" name="boardId" value={boardData.board.id} />
                           <input type="hidden" name="listId" value={list.id} />
-                          <button className="rounded-md p-2 text-[var(--muted)] transition hover:bg-white/5" aria-label="Archive list" title="Archive list">
+                          <button className="rounded-md p-2 text-[var(--muted)] transition hover:bg-accent" aria-label="Archive list" title="Archive list">
                             <Archive className="h-4 w-4" />
                           </button>
                         </form>
@@ -916,7 +916,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                                           ) : (
                                             <div
                                               key={member.id}
-                                              className="avatar-ring flex h-7 w-7 items-center justify-center bg-[var(--surface-soft)] text-[9px] text-white"
+                                              className="avatar-ring flex h-7 w-7 items-center justify-center bg-[var(--surface-soft)] text-[9px] text-foreground"
                                               style={{ marginLeft: index === 0 ? 0 : -8 }}
                                             >
                                               {(member.full_name ?? member.email).slice(0, 2)}
@@ -924,7 +924,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                                           )
                                         ))}
                                         {card.members.length > 4 ? (
-                                          <div className="avatar-ring ml-[-8px] flex h-7 w-7 items-center justify-center bg-[var(--surface-soft)] text-[9px] text-white">
+                                          <div className="avatar-ring ml-[-8px] flex h-7 w-7 items-center justify-center bg-[var(--surface-soft)] text-[9px] text-foreground">
                                             +{card.members.length - 4}
                                           </div>
                                         ) : null}
@@ -1086,7 +1086,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
 
       {contextMenu != null && contextMenuCard != null ? (
         <div
-          className="fixed z-[120] flex gap-1 rounded-lg border border-[var(--border)] bg-[var(--panel)] p-1.5 text-sm text-white shadow-[0_30px_120px_rgba(0,0,0,0.65)]"
+          className="fixed z-[120] flex gap-1 rounded-lg border border-[var(--border)] bg-[var(--panel)] p-1.5 text-sm text-foreground shadow-[0_30px_120px_rgba(0,0,0,0.65)]"
           style={{
             left: contextMenu.x,
             top: contextMenu.y,
@@ -1270,7 +1270,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm sm:px-6 sm:py-8"
         >
           <div
-            className="panel soft-scrollbar max-h-[calc(100vh-2rem)] w-full max-w-7xl overflow-y-auto text-white shadow-[0_30px_120px_rgba(0,0,0,0.6)] sm:max-h-[calc(100vh-3rem)]"
+            className="panel soft-scrollbar max-h-[calc(100vh-2rem)] w-full max-w-7xl overflow-y-auto text-foreground shadow-[0_30px_120px_rgba(0,0,0,0.6)] sm:max-h-[calc(100vh-3rem)]"
           >
             <div className="flex items-start justify-between gap-4 border-b border-[var(--border)] px-6 py-5">
               <div className="min-w-0">
@@ -1295,7 +1295,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                         ) : (
                           <div
                             key={member.id}
-                            className="avatar-ring flex h-8 w-8 items-center justify-center bg-[var(--surface-soft)] text-[10px] text-white"
+                            className="avatar-ring flex h-8 w-8 items-center justify-center bg-[var(--surface-soft)] text-[10px] text-foreground"
                             style={{ marginLeft: index === 0 ? 0 : -8 }}
                           >
                             {(member.full_name ?? member.email).slice(0, 2)}
@@ -1316,7 +1316,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                 <button
                   type="button"
                   onClick={() => setShowLabelEditor((current) => current == false)}
-                  className={`surface p-3 transition ${showLabelEditor ? "border-[var(--border-strong)] text-primary" : "text-white/80"}`}
+                  className={`surface p-3 transition ${showLabelEditor ? "border-[var(--border-strong)] text-primary" : "text-muted-foreground"}`}
                   aria-label="Toggle labels"
                   title="Labels"
                 >
@@ -1330,7 +1330,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                       successMessage: pinnedDraft ? "card unpinned." : "card pinned.",
                     });
                   }}
-                  className={`surface p-3 transition ${pinnedDraft ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-primary" : "text-white/80"}`}
+                  className={`surface p-3 transition ${pinnedDraft ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-primary" : "text-muted-foreground"}`}
                   aria-label="Toggle pinned"
                   title={pinnedDraft ? "Unpin card" : "Pin card"}
                   aria-pressed={pinnedDraft}
@@ -1345,7 +1345,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
                       successMessage: completedDraft ? "card reopened." : "card completed.",
                     });
                   }}
-                  className={`surface p-3 transition ${completedDraft ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-primary" : "text-white/80"}`}
+                  className={`surface p-3 transition ${completedDraft ? "border-[var(--border-strong)] bg-[var(--accent-soft)] text-primary" : "text-muted-foreground"}`}
                   aria-label="Toggle completed"
                   title={completedDraft ? "Mark incomplete" : "Mark complete"}
                   aria-pressed={completedDraft}
@@ -1782,7 +1782,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
               <button
                 type="button"
                 onClick={() => setShowBoardSettings(false)}
-                className="surface p-3 text-white/80 transition hover:border-[var(--border-strong)]"
+                className="surface p-3 text-muted-foreground transition hover:border-[var(--border-strong)]"
                 aria-label="Close board settings"
               >
                 <X className="h-4 w-4" />
@@ -1839,7 +1839,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
             <div className="mt-6 border-t border-[var(--border)] pt-6">
               <p className="text-xs text-[var(--danger)]">Danger zone</p>
               <p className="mt-2 text-sm text-[var(--muted)]">
-                type <span className="text-white">{boardData.board.name}</span> to permanently delete this board.
+                type <span className="text-foreground">{boardData.board.name}</span> to permanently delete this board.
               </p>
               <form action={deleteBoardAction} className="mt-4 grid gap-3">
                 <input type="hidden" name="boardId" value={boardData.board.id} />
@@ -1868,7 +1868,7 @@ export function BoardClient({ data }: { data: BoardPageData }) {
               <button
                 type="button"
                 onClick={() => setShowCreateList(false)}
-                className="surface p-3 text-white/80 transition hover:border-[var(--border-strong)]"
+                className="surface p-3 text-muted-foreground transition hover:border-[var(--border-strong)]"
                 aria-label="Close create list"
               >
                 <X className="h-4 w-4" />
